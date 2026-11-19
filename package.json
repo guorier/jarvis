@@ -1,0 +1,50 @@
+{
+  "name": "jarvis-hud",
+  "version": "0.1.0",
+  "description": "음성인식 없는 데스크톱 자비스 HUD",
+  "author": "JARVIS",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "icon": "electron scripts/make-icon.js",
+    "dist": "electron-builder --win nsis"
+  },
+  "build": {
+    "appId": "local.jarvis.hud",
+    "productName": "JARVIS",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*",
+      "renderer/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "JARVIS",
+      "artifactName": "JARVIS-Setup-${version}.${ext}"
+    }
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.10.0",
+    "@google/genai": "^3.6.1",
+    "systeminformation": "^5.33.23"
+  },
+  "devDependencies": {
+    "electron": "^45.3.4",
+    "electron-builder": "^26.18.0"
+  }
+}

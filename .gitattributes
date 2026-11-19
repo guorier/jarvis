@@ -1,0 +1,6 @@
+# 줄바꿈을 저장소에서는 LF로 맞춘다 (Windows·다른 PC 사이 충돌 방지)
+* text=auto eol=lf
+*.bat text eol=crlf
+*.png binary
+*.otf binary
+*.ico binary

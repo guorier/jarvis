@@ -1,0 +1,19 @@
+# 설치하면 다시 생기는 것 (npm install)
+node_modules/
+
+# 빌드 결과물 (npm run dist) — 설치 파일은 저장소에 넣지 않는다
+dist/
+*.exe
+*.blockmap
+
+# 비밀값·개인 설정 (API 키는 %APPDATA%\jarvis-hud 에 저장되지만 혹시 몰라 막아 둔다)
+.env
+.env.*
+jarvis-data.json
+
+# 도구가 만드는 파일
+.impeccable/
+.claude/settings.local.json
+*.log
+Thumbs.db
+desktop.ini
