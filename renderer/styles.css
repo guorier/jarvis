@@ -269,6 +269,8 @@ input, textarea, select, button { font: inherit; color: inherit; }
 
 /* 회전은 눈금 링만 (constant motion → linear). 생각 중에는 래퍼가 추가로 돈다(일시정지 방식이라 튀지 않음). */
 .rot-b { animation: spin 120s linear infinite; }
+.rot-bracket { animation: spin 40s linear infinite; }
+.rot-yellow { animation: spin 26s linear infinite reverse; }
 .spin { animation: spin 8s linear infinite paused; }
 .core.thinking .spin { animation-play-state: running; }
 .core.thinking .em-inner { animation: breathe 1.4s ease-in-out infinite; }
@@ -561,7 +563,7 @@ input, textarea, select, button { font: inherit; color: inherit; }
 @keyframes fade { from { opacity: 0; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .ring, .spin, .rot-a, .rot-b, .rot-c, .rot-d { animation: none !important; }
+  .ring, .spin, .rot-a, .rot-b, .rot-c, .rot-d, .rot-bracket, .rot-yellow { animation: none !important; }
   .panel.rv-in, .daystrip.rv-in, .topbar.rv-in, .stage.rv-in .orbit, .round-dock.rv-in .rbtn,
   .panel.rv-in > *, .daystrip.rv-in li, .core.drawing .em-draw, .core.drawing svg > * { animation: fade 300ms ease backwards !important; }
 }

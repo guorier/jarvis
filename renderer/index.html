@@ -168,9 +168,11 @@
             <!-- 바깥 테두리 + 브래킷 장식 -->
             <circle cx="200" cy="200" r="194" class="em-rim" />
             <circle cx="200" cy="200" r="186" class="em-rim-inner" />
-            <!-- 왼쪽 위 브래킷 (222°~247°) -->
-            <path d="M 59.0 72.9 A 190 190 0 0 1 125.8 25.1" class="em-bracket" />
-            <path d="M 63.3 76.8 A 184 184 0 0 1 128.1 30.6" class="em-bracket-thin" />
+            <!-- 왼쪽 위 브래킷 (222°~247°) — 테두리를 따라 시계 방향으로 회전 -->
+            <g class="ring rot-bracket">
+              <path d="M 59.0 72.9 A 190 190 0 0 1 125.8 25.1" class="em-bracket" />
+              <path d="M 63.3 76.8 A 184 184 0 0 1 128.1 30.6" class="em-bracket-thin" />
+            </g>
             <!-- 오른쪽 브래킷 (316°~14°) + 세로 줄무늬 -->
             <path d="M 338.2 66.5 A 192 192 0 0 1 386.3 246.4" class="em-bracket" />
             <path d="M 389.1 173.4 A 191 191 0 0 1 385.3 245.8" class="em-grill" />
@@ -191,10 +193,12 @@
             <path d="M 69 200 A 131 131 0 1 1 269.4 311.1" class="em-band-lines" />
             <path d="M 52 200 A 148 148 0 1 1 295.1 313.4" class="em-band-edge" />
 
-            <!-- 왼쪽 노란 호 + 아래 끝 알약 테두리 -->
-            <path d="M 92.4 222.87 A 110 110 0 0 1 118.26 126.4" class="em-yellow" />
-            <path d="M 107.75 259.91 A 110 110 0 0 1 94.81 232.16" class="em-pill" />
-            <path d="M 107.75 259.91 A 110 110 0 0 1 94.81 232.16" class="em-pill-hole" />
+            <!-- 왼쪽 노란 호 + 아래 끝 알약 테두리 — 함께 반시계 방향으로 회전 -->
+            <g class="ring rot-yellow">
+              <path d="M 92.4 222.87 A 110 110 0 0 1 118.26 126.4" class="em-yellow" />
+              <path d="M 107.75 259.91 A 110 110 0 0 1 94.81 232.16" class="em-pill" />
+              <path d="M 107.75 259.91 A 110 110 0 0 1 94.81 232.16" class="em-pill-hole" />
+            </g>
 
             <!-- 위쪽 노란 점 5개 + 청록 캡슐 -->
             <g class="em-ydots">
