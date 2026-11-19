@@ -187,11 +187,13 @@
             </g></g>
             <circle cx="200" cy="200" r="157" class="em-line" />
 
-            <!-- 하늘색 띠: 9시 → 위 → 오른쪽 4~5시 (왼쪽 아래는 비어 있음) -->
-            <path d="M 69 200 A 131 131 0 1 1 307.3 275.1" class="em-band" />
-            <path d="M 307.3 275.1 A 131 131 0 0 1 269.4 311.1" class="em-band tail" />
-            <path d="M 69 200 A 131 131 0 1 1 269.4 311.1" class="em-band-lines" />
-            <path d="M 52 200 A 148 148 0 1 1 295.1 313.4" class="em-band-edge" />
+            <!-- 하늘색 띠: 9시 → 위 → 오른쪽 4~5시 (왼쪽 아래는 비어 있음) — 통째로 시계 방향 회전 -->
+            <g class="ring rot-band">
+              <path d="M 69 200 A 131 131 0 1 1 307.3 275.1" class="em-band" />
+              <path d="M 307.3 275.1 A 131 131 0 0 1 269.4 311.1" class="em-band tail" />
+              <path d="M 69 200 A 131 131 0 1 1 269.4 311.1" class="em-band-lines" />
+              <path d="M 52 200 A 148 148 0 1 1 295.1 313.4" class="em-band-edge" />
+            </g>
 
             <!-- 왼쪽 노란 호 + 아래 끝 알약 테두리 — 함께 반시계 방향으로 회전 -->
             <g class="ring rot-yellow">
@@ -200,11 +202,7 @@
               <path d="M 107.75 259.91 A 110 110 0 0 1 94.81 232.16" class="em-pill-hole" />
             </g>
 
-            <!-- 위쪽 노란 점 5개 + 청록 캡슐 -->
-            <g class="em-ydots">
-              <circle cx="147.5" cy="95" r="2" /><circle cx="171.5" cy="87.5" r="2" /><circle cx="197.5" cy="84" r="2" />
-              <circle cx="220" cy="86.5" r="2" /><circle cx="241.5" cy="91.5" r="2" />
-            </g>
+            <!-- 위쪽 청록 캡슐 -->
             <rect x="180" y="85.6" width="13" height="4.2" rx="2.1" class="em-capsule" />
             <path d="M 200 89 L 226 90.5" class="em-capsule-line" />
 

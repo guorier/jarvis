@@ -253,7 +253,6 @@ input, textarea, select, button { font: inherit; color: inherit; }
 .em-yellow { fill: none; stroke: #f0a81c; stroke-width: 2.2; stroke-linecap: round; filter: drop-shadow(0 0 3px rgba(240, 168, 28, 0.8)); }
 .em-pill { fill: none; stroke: #f0a81c; stroke-width: 8; stroke-linecap: round; filter: drop-shadow(0 0 3px rgba(240, 168, 28, 0.6)); }
 .em-pill-hole { fill: none; stroke: #07141a; stroke-width: 4.6; stroke-linecap: round; }
-.em-ydots circle { fill: #ffd23a; filter: drop-shadow(0 0 3px rgba(255, 210, 58, 0.9)); }
 .em-capsule { fill: none; stroke: #8be9fb; stroke-width: 1; }
 .em-capsule-line { fill: none; stroke: #56d6ee; stroke-width: 1; opacity: 0.7; }
 .em-inner { fill: none; stroke: #79daf0; stroke-width: 4.5; filter: drop-shadow(0 0 5px rgba(86, 214, 238, 0.55)); }
@@ -271,6 +270,7 @@ input, textarea, select, button { font: inherit; color: inherit; }
 .rot-b { animation: spin 120s linear infinite; }
 .rot-bracket { animation: spin 40s linear infinite; }
 .rot-yellow { animation: spin 26s linear infinite reverse; }
+.rot-band { animation: spin 60s linear infinite reverse; }
 .spin { animation: spin 8s linear infinite paused; }
 .core.thinking .spin { animation-play-state: running; }
 .core.thinking .em-inner { animation: breathe 1.4s ease-in-out infinite; }
@@ -533,7 +533,11 @@ input, textarea, select, button { font: inherit; color: inherit; }
 
 /* 엠블럼: 링을 따라 선이 그려지고, 나머지는 뒤따라 나타난다 */
 .core.drawing .em-draw { stroke-dasharray: 1 1; animation: draw 900ms var(--ease-out) backwards; }
-.core.drawing svg > :not(.em-draw):not(defs) { animation: fade 600ms var(--ease-out) 380ms backwards; }
+/* 회전하는 그룹(.ring, .spin)에는 fade를 걸지 않는다 — 걸면 회전 애니메이션이 덮여 0°로 돌아갔다가
+   그리기가 끝난 뒤 갑자기 다시 돈다. 대신 그룹 안쪽 요소에 fade를 건다. */
+.core.drawing svg > :not(.em-draw):not(defs):not(.ring):not(.spin),
+.core.drawing svg > .ring > :not(.em-draw),
+.core.drawing .spin .ring > * { animation: fade 600ms var(--ease-out) 380ms backwards; }
 
 @keyframes log-in { from { opacity: 0; transform: translateX(-6px); } }
 @keyframes box-in {
@@ -563,7 +567,7 @@ input, textarea, select, button { font: inherit; color: inherit; }
 @keyframes fade { from { opacity: 0; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .ring, .spin, .rot-a, .rot-b, .rot-c, .rot-d, .rot-bracket, .rot-yellow { animation: none !important; }
+  .ring, .spin, .rot-a, .rot-b, .rot-c, .rot-d, .rot-bracket, .rot-yellow, .rot-band { animation: none !important; }
   .panel.rv-in, .daystrip.rv-in, .topbar.rv-in, .stage.rv-in .orbit, .round-dock.rv-in .rbtn,
   .panel.rv-in > *, .daystrip.rv-in li, .core.drawing .em-draw, .core.drawing svg > * { animation: fade 300ms ease backwards !important; }
 }
