@@ -1,4 +1,18 @@
 // AI 비서: Claude API + 도구(시스템 상태, 앱 실행, 루틴, 할 일, 일정, 메모, 스마트홈, 날씨) + 웹 검색
+// ============================================================================
+// [코드 리뷰] src/ai.js — AI 비서의 두뇌 (도구 정의 + Claude 연결, Gemini는 gemini.js로 넘김)
+// 흐름: chat() → provider가 gemini면 GeminiProvider.chat, 아니면 Claude 스트리밍 루프(최대 12턴)
+// 좋은 점
+//  - 도구는 "등록된 것만" 다루도록 설계돼 있다(앱·루틴·기기). 시스템 프롬프트에도 같은 규칙을 적었다.
+//  - eager_input_streaming을 켠 대신 validateInput으로 직접 검증하고, max_tokens로 잘린 도구 입력은 실행하지 않는다.
+//  - 실패 시 이번 턴을 되돌리고, 오류를 사용자가 읽을 수 있는 한국어 문장으로 바꾼다(describeError).
+//  - busy 플래그로 두 요청이 동시에 대화 기록을 건드리지 않게 막는다.
+// 개선 포인트
+//  - [리뷰-A1] Claude 대화 기록(messages)도 /초기화 전까지 계속 늘어난다(gemini.js [리뷰-G1]과 같은 문제).
+//  - [리뷰-A2] findByName의 부분 일치가 양방향이라, 이름이 비슷한 다른 항목이 실행될 수 있다.
+//  - [리뷰-A3] add_event의 time 형식을 확인하지 않는다. 화면(widgets.js renderEvents)은 time을 이스케이프 없이 넣는다.
+//  - [리뷰] control_device 뒤의 onDataChanged("devices")는 스마트홈 패널을 없앤 뒤 받는 곳이 없다(해는 없음).
+// ============================================================================
 const Anthropic = require("@anthropic-ai/sdk");
 const { newId } = require("./store");
 const system = require("./system");
@@ -128,6 +142,9 @@ function validateInput(tool, input) {
   return null;
 }
 
+// [리뷰-A2] 1순위: id·이름 정확히 일치 / 2순위: 부분 일치(양방향).
+//           "메모"로 찾으면 "메모장"이, "구글 드라이브"로 찾으면 "구글"이 걸린다. 후보가 여럿이면 실행하지 말고
+//           목록을 돌려줘 AI가 다시 묻게 하는 편이 안전하다. (chat.js의 findNamed와 규칙도 다르다)
 const findByName = (list, name) => {
   const n = name.trim().toLowerCase();
   return list.find((x) => x.id.toLowerCase() === n || x.name.toLowerCase() === n) ||
@@ -209,6 +226,8 @@ class Assistant {
       }
       case "add_event": {
         if (!/^\d{4}-\d{2}-\d{2}$/.test(input.date)) throw new Error("date는 YYYY-MM-DD 형식이어야 합니다.");
+        // [리뷰-A3] time도 같은 방식으로 확인할 것: if (input.time && !/^\d{2}:\d{2}$/.test(input.time)) throw ...
+        //           (웹 검색 결과에 섞인 문장이 AI를 거쳐 time에 들어오면 화면에 HTML로 끼어들 수 있다)
         const ev = { id: newId(), title: input.title, date: input.date, time: input.time || "" };
         store.set("events", [...store.get("events"), ev]);
         this.onDataChanged("events");
@@ -288,6 +307,8 @@ class Assistant {
     }
     this.busy = true;
     const client = this.client();
+    // [리뷰-A1] 기록이 계속 쌓인다. 최근 N턴만 보내거나 오래된 턴을 요약해 줄일 것
+    //           (tool_use와 tool_result는 짝으로 함께 남기거나 함께 지워야 한다).
     this.messages.push({ role: "user", content: `${this.context()}\n\n${userText}` });
     try {
       for (let turn = 0; turn < 12; turn++) {

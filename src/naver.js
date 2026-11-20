@@ -32,6 +32,9 @@ async function searchType(settings, type, query, display) {
 }
 
 // 여러 종류를 한 번에 찾아 AI가 읽기 좋은 형태로 돌려준다.
+// [코드 리뷰] 네 종류를 동시에(Promise.all) 찾아 응답이 빠르다. 키는 메인 프로세스 안에서만 쓰여 화면으로 나가지 않는다.
+// [리뷰] 지역·뉴스는 실패해도 빈 목록으로 넘어가지만, 웹문서·블로그 중 하나라도 실패하면 전체가 실패한다.
+//        네 종류 모두 .catch(() => [])로 맞추고 "전부 비었을 때만 실패"로 하면 일부 장애에도 답할 수 있다.
 async function naverSearch(settings, query) {
   if (!naverReady(settings)) throw new Error("네이버 검색 API 키가 설정되지 않았습니다.");
   const [web, blog, local, news] = await Promise.all([

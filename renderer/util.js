@@ -1,4 +1,14 @@
 // 공통 유틸: DOM, 포맷, 효과음, TTS, 로그, 알림
+// ============================================================================
+// [코드 리뷰] renderer/util.js — 다른 화면 스크립트가 모두 쓰는 공통 함수 (index.html에서 가장 먼저 로드)
+// 좋은 점
+//  - esc()로 HTML 특수문자를 막고, miniMarkdown은 "먼저 이스케이프 → 그다음 태그"라 AI 답변에 HTML이 섞여도 안전하다.
+//  - 링크는 http/https만 <a>로 만든다(javascript: 주소 차단).
+//  - 로그는 300줄까지만 남겨 오래 켜 둬도 메모리가 늘지 않는다.
+// 개선 포인트
+//  - [리뷰] 전역 변수($, esc, Sound…)로 파일끼리 연결돼 있다. 로드 순서(index.html <script> 순서)에 의존하므로
+//           순서를 바꾸면 깨진다. 규모가 더 커지면 ES 모듈(import/export)로 바꾸는 것을 권장.
+// ============================================================================
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
@@ -51,6 +61,7 @@ function miniMarkdown(text) {
 }
 
 // ===== 효과음 (WebAudio로 합성) =====
+// [리뷰] AudioContext는 처음 만들 때 0.2초쯤 화면을 멈추게 한다. 그래서 로딩 시작 전에 intro.js가 미리 만들어 둔다.
 const Sound = {
   ctx: null,
   enabled: true,

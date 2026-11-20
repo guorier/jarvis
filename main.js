@@ -1,3 +1,19 @@
+// ============================================================================
+// [코드 리뷰] main.js — Electron 메인 프로세스 (앱의 "뒤편")
+// 역할: 창 만들기, 화면 ↔ 기능을 잇는 IPC 통로 등록, 리마인더 알림, GPU·NPU 수집기 시작
+// 흐름: app.whenReady → Store(데이터) → Assistant(AI) → registerIpc → accel.start → createWindow
+//
+// 좋은 점
+//  - contextIsolation + sandbox + nodeIntegration:false 로 화면 코드가 Node 기능에 직접 닿지 못한다.
+//  - IPC는 handle()로 감싸 { ok, data | error } 한 가지 모양으로만 돌려줘 화면 쪽 오류 처리가 단순하다.
+//  - API 키·토큰은 화면으로 보낼 때 마스킹하고, 마스킹된 값이 돌아오면 기존 값을 유지한다.
+//  - 외부 링크는 창 안에서 열지 않고 http/https만 기본 브라우저로 넘긴다.
+//
+// 개선 포인트 (아래 [리뷰-M*] 주석 참고)
+//  - [리뷰-M1] 시스템 정보 수집(systeminformation)이 메인 프로세스에서 돌아, 그동안 창 그리기가 잠깐 멈춘다.
+//  - [리뷰-M2] store:set은 키 이름만 확인하고 값의 모양은 검사하지 않는다.
+//  - [리뷰-M3] 개발용 환경변수(JARVIS_*) 분기가 설치본에도 그대로 들어 있다.
+// ============================================================================
 const { app, BrowserWindow, ipcMain, shell, Notification } = require("electron");
 const path = require("path");
 const { Store, newId } = require("./src/store");
@@ -19,6 +35,8 @@ const send = (channel, payload) => {
 const log = (text, level = "info") => send("log", { text, level, at: Date.now() });
 
 function createWindow() {
+  // [리뷰-M3] 아래 JARVIS_* 개발용 분기는 설치본에서도 환경변수만 있으면 동작한다.
+  //           해는 없지만 `if (!app.isPackaged)`로 감싸 두면 배포본이 더 깔끔하다.
   // 개발용: JARVIS_SIZE="1366x768" 이면 그 크기(내용 영역)로 창을 만든다
   const devSize = process.env.JARVIS_SIZE ? process.env.JARVIS_SIZE.split("x").map(Number) : null;
   win = new BrowserWindow({
@@ -45,6 +63,7 @@ function createWindow() {
   if (process.env.JARVIS_FPS) query.fps = "1";
   win.loadFile(path.join(__dirname, "renderer", "index.html"), Object.keys(query).length ? { query } : undefined);
   // 개발용: JARVIS_ZOOM=0.55 처럼 화면을 축소해 넓은 모니터(예: 2560px 폭)를 흉내 낸다
+  // [리뷰] Electron은 확대 비율을 페이지 주소(file://)별로 기억한다. 테스트 뒤에는 JARVIS_ZOOM=1로 한 번 실행해 되돌릴 것.
   if (process.env.JARVIS_ZOOM) win.webContents.on("did-finish-load", () => win.webContents.setZoomFactor(Number(process.env.JARVIS_ZOOM)));
 
   // 개발용: JARVIS_DEBUG=1이면 화면 콘솔을 터미널에 출력, JARVIS_SNAPSHOT=경로면 8초 뒤 화면을 캡처한다.
@@ -82,7 +101,9 @@ function createWindow() {
   });
 }
 
-// 리마인더: 1분마다 기한이 된 할 일을 알린다.
+// 리마인더: 30초마다(아래 setInterval) 기한이 된 할 일을 알린다.
+// [리뷰] 이미 알린 목록(notified)은 메모리에만 있어서, 앱을 다시 켜면 기한이 지난 미완료 할 일을 한 번 더 알린다.
+//        "놓친 알림 다시 보기"로는 괜찮은 동작이지만, 원치 않으면 알린 id를 저장소에 남겨야 한다.
 const notified = new Set();
 function checkReminders() {
   const now = new Date();
@@ -124,6 +145,9 @@ function registerIpc() {
       }
     };
   });
+  // [리뷰-M2] 키 이름은 Store.set이 확인하지만 값의 모양(배열인지, 필드가 맞는지)은 검사하지 않는다.
+  //           화면 코드만 부르는 통로(CSP로 외부 스크립트 차단)라 지금은 괜찮지만, 잘못된 값이 저장되면
+  //           다음 실행에서 화면이 깨질 수 있다 → 키별 간단한 형식 검사를 두면 안전하다.
   handle("store:set", (key, value) => {
     if (key === "settings") {
       const cur = store.get("settings");
@@ -140,6 +164,9 @@ function registerIpc() {
   handle("id:new", () => newId());
 
   // 시스템
+  // [리뷰-M1] systeminformation 조회는 메인 프로세스에서 돌아 그동안 창 그리기(합성)가 0.1~0.5초 멈춘다.
+  //           로딩 중에는 검은 화면 순간으로 첫 호출을 미뤄 숨겼지만(intro.js fireBlack), 2초·10초 주기 호출 때
+  //           짧은 끊김은 남아 있다 → Electron utilityProcess(별도 프로세스)로 옮기는 것을 권장.
   handle("sys:fast", () => system.getFast());
   handle("sys:slow", () => system.getSlow());
 

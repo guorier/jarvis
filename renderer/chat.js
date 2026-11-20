@@ -1,4 +1,18 @@
 // AI 채팅 + 슬래시 명령
+// ============================================================================
+// [코드 리뷰] renderer/chat.js
+// 흐름: 입력 → "/"로 시작하면 handleSlash(앱 안에서 바로 처리), 아니면 Chat.ask → 메인의 ai:chat
+//       → 스트리밍 이벤트(delta/tool/status)가 requestId로 짝지어 들어와 말풍선을 갱신
+// 좋은 점
+//  - requestId로 이벤트를 걸러, 늦게 도착한 이전 요청의 조각이 새 답변에 섞이지 않는다.
+//  - 사용자 입력은 esc()로, AI 답변은 miniMarkdown(이스케이프 후 변환)으로 넣는다.
+// 개선 포인트
+//  - [리뷰] render()가 조각이 올 때마다 답변 전체를 다시 마크다운으로 만든다. 짧은 답에선 문제없지만
+//           긴 답변에선 점점 느려진다(조각 수 × 길이) → requestAnimationFrame으로 한 프레임에 한 번만 그리기.
+//  - [리뷰] setCore의 #core-state 요소는 지금 화면에 없다(예전 디자인 흔적). 해는 없지만 지워도 된다.
+//  - [리뷰] findNamed(여기)와 ai.js의 findByName이 이름 찾는 규칙이 달라, 같은 이름이 슬래시 명령과 AI에서
+//           다른 항목을 고를 수 있다 → 한 곳으로 합칠 것.
+// ============================================================================
 const TOOL_LABELS = {
   get_system_status: "시스템 확인",
   list_launchers_and_routines: "런처 목록",
@@ -63,6 +77,7 @@ const Chat = {
     this.add("user", esc(display));
     Sound.send();
     TTS.stop();
+    // [리뷰] id 하나를 받으려고 메인 프로세스를 한 번 왕복한다. 화면에서 crypto.randomUUID()로 만들어도 충분하다.
     const id = await jarvis.newId();
     this.current = { id, el: this.add("ai", '<span class="cursor"></span>'), text: "", chips: [] };
     this.setCore("thinking");

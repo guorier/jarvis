@@ -1,4 +1,17 @@
 // 앱 시작: 부팅 시퀀스, 시계, 주기적 갱신, 커맨드 팔레트, 설정
+// ============================================================================
+// [코드 리뷰] renderer/app.js — 화면의 시작점과 전역 조작(시계, 팔레트, 설정, 주기 갱신)
+// 시작 순서(맨 아래 start): 데이터 읽기 → 화면 그리기 → 지구본·그래프 준비 → 로딩 연출
+//   → (로딩의 검은 화면 순간) 시스템·날씨·뉴스·환율 첫 조회 → 로딩 끝 → 인사 메시지 → 주기 갱신 시작
+// 좋은 점
+//  - 첫 시스템 조회를 로딩의 검은 화면 순간으로 미뤄, 메인 프로세스가 바쁜 순간이 화면에 보이지 않는다.
+//  - 커맨드 팔레트는 일치 항목이 없으면 "AI에게 묻기"로 이어져 막다른 길이 없다.
+//  - 설정 저장 시 런처·루틴 형식을 먼저 검사하고, 실패하면 저장하지 않고 이유를 보여 준다.
+// 개선 포인트
+//  - [리뷰] 설정 저장이 settings → launchers → routines 세 번에 나눠 저장된다. 중간에 실패하면 일부만 바뀐다.
+//  - [리뷰] 주기 갱신(setInterval)이 창이 최소화돼도 계속 돈다. document.hidden일 때 건너뛰면 CPU를 아낀다.
+//  - [리뷰] 스마트홈 패널을 없앴지만 설정 화면의 Home Assistant 칸은 남아 있다(AI 기기 제어용). 의도라면 OK.
+// ============================================================================
 // ---------- 시계 · 인사 ----------
 function greetingFor(h) {
   if (h < 5) return "늦은 밤입니다";
@@ -246,6 +259,7 @@ $("#settings-form").addEventListener("submit", async (e) => {
     };
     const cityChanged = settings.city !== State.data.settings.city;
     const kwChanged = settings.newsKeyword !== State.data.settings.newsKeyword;
+    // [리뷰] 세 번에 나눠 저장 — 두 번째에서 실패하면 설정만 바뀐 상태가 된다. 한 번에 저장하는 IPC가 있으면 좋다.
     await jarvis.store.set("settings", settings);
     await jarvis.store.set("launchers", launchers);
     await jarvis.store.set("routines", routines);
@@ -307,6 +321,8 @@ jarvis.onDataChanged(async (key) => {
   pushNotice("시스템이 온라인 상태입니다.", "info");
   $("#chat-input").focus();
 
+  // [리뷰] 창이 최소화돼도 아래 주기 조회는 계속된다(특히 2초마다 시스템 조회 → 메인 프로세스 부담).
+  //        각 함수 앞에서 if (document.hidden) return; 하면 숨겨진 동안 쉬게 할 수 있다.
   setInterval(tickClock, 1000);
   setInterval(updateFast, 2000);
   setInterval(updateSlow, 10000);

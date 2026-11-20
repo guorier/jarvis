@@ -1,4 +1,16 @@
-// 위젯: 시스템, 네트워크, 프로세스, 스마트홈, 날씨, 일정, 할 일, 메모, 뉴스, 환율, 런처 독
+// 위젯: 시스템, 네트워크, 프로세스, 날씨, 일정, 할 일, 메모, 뉴스, 환율, 런처 독
+// ============================================================================
+// [코드 리뷰] renderer/widgets.js — HUD 패널마다 "데이터 받기 → 화면 그리기"
+// 구조: State.data(저장소 사본)를 기준으로 render*()가 innerHTML을 통째로 다시 만든다. 저장은 saveKey().
+// 좋은 점
+//  - 사용자·외부 데이터(할 일, 메모, 뉴스 제목, 프로세스 이름 등)는 대부분 esc()로 이스케이프한다.
+//  - updateFast/updateSlow는 이전 조회가 끝나기 전엔 겹쳐 부르지 않는다(fastBusy/slowBusy).
+// 개선 포인트
+//  - [리뷰-W1] (중요) renderEvents에서 일정의 time과 날짜 표시를 이스케이프 없이 넣는다. AI가 add_event로
+//              넣은 time 문자열이 그대로 HTML로 해석될 수 있다(ai.js [리뷰-A3]와 함께 고칠 것).
+//  - [리뷰] saveKey는 저장 성공 뒤에야 State를 바꾼다(좋음). 다만 실패 시 화면에 알리지 않고 예외만 올라간다.
+//  - [리뷰] lastGpu는 값을 저장만 하고 쓰는 곳이 없다(예전 흔적).
+// ============================================================================
 const State = { data: null };
 
 async function reloadData() {
@@ -65,7 +77,7 @@ function renderSysHeader() {
   $("#sys-temp").textContent = [sysHeader.temp, sysHeader.bat].filter(Boolean).join(" · ") || "--";
 }
 
-let lastGpu = null;
+let lastGpu = null; // [리뷰] 저장만 하고 읽는 곳이 없다 → 지워도 된다
 let fastBusy = false;
 let slowBusy = false;
 async function updateFast() {
@@ -214,6 +226,8 @@ function renderEvents() {
     ? list
         .map((e) => {
           const label = e.date === today ? "오늘" : e.date.slice(5).replace("-", "/");
+          // [리뷰-W1] label과 e.time이 esc() 없이 들어간다 → `${esc(label)} ${esc(e.time || "")}`로 바꿀 것.
+          //           (제목 e.title은 이미 esc() 처리돼 있다)
           return `<li data-id="${e.id}" class="${e.date === cal.selected ? "sel" : ""}"><span class="date-tag">${label} ${e.time || ""}</span><span class="grow">${esc(e.title)}</span><button class="x" title="삭제">✕</button></li>`;
         })
         .join("")
@@ -418,6 +432,7 @@ async function runRoutineById(id) {
   try {
     const res = await jarvis.runRoutine(id);
     const r = State.data.routines.find((x) => x.id === id);
+    // [리뷰] 결과 문자열이 "실패"로 시작하는지로 판단한다(control.js 참고). 문구가 바뀌면 집계가 틀어진다.
     const failed = res.filter((x) => x.startsWith("실패")).length;
     pushNotice(`루틴 “${r ? r.name : id}” 완료${failed ? ` (실패 ${failed}건)` : ""}`, failed ? "error" : "info");
   } catch (e) {

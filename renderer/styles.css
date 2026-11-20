@@ -1,6 +1,17 @@
 /* =========================================================
    J.A.R.V.I.S. HUD — 블루프린트 블루 테마
    ========================================================= */
+/* [코드 리뷰] styles.css
+   순서: 변수(:root) → 전체 배치(#app 그리드) → 패널 → 가운데(엠블럼·채팅) → 오른쪽 → 하단 → 설정·팔레트
+         → 부팅(로딩) → HUD 조립 애니메이션 → @keyframes → 동작 줄이기 → 화면 크기별(@media)
+   좋은 점
+   - 색·이징을 :root 변수로 모아 테마를 한 곳에서 바꿀 수 있다.
+   - 애니메이션은 대부분 transform·opacity만 써서 GPU로 처리된다. "동작 줄이기" 설정을 존중한다.
+   - 로딩 연출의 위치·글자 크기를 cqw(모듈 폭 기준)로 잡아 화면 크기가 달라도 비율이 유지된다.
+   개선 포인트
+   - [리뷰] 파일 하나가 700줄을 넘는다. 부팅(로딩)·엠블럼·패널을 파일로 나누면 찾기 쉬워진다.
+   - [리뷰] 높이 기준 @media(940/820px) 안에 크기 숫자가 흩어져 있다. 자주 바꾸는 값은 변수로 올리면 관리가 쉽다.
+   - [리뷰] Orbitron 글꼴만 인터넷(Google Fonts)에서 받는다. 오프라인이면 Pretendard로 대체된다(설치본에 넣으면 해결). */
 /* 기본 글꼴: 앱에 포함된 Pretendard (설치본에도 들어감) */
 @font-face { font-family: "Pretendard"; font-weight: 400; font-display: block; src: url("fonts/Pretendard-Regular.otf") format("opentype"); }
 @font-face { font-family: "Pretendard"; font-weight: 500; font-display: block; src: url("fonts/Pretendard-Medium.otf") format("opentype"); }

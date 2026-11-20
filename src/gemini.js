@@ -1,4 +1,18 @@
 // Google Gemini 제공자 (무료 등급 사용 가능). 도구 정의와 실행은 ai.js의 것을 그대로 쓴다.
+// ============================================================================
+// [코드 리뷰] src/gemini.js
+// 흐름: chat() → generate()(모델 대체 사슬) → 함수 호출이면 도구 실행 → 결과를 붙여 다시 요청 (최대 10턴)
+// 좋은 점
+//  - 혼잡(429/5xx)·시간 초과면 가벼운 모델로 자동 전환하고, 잘 된 모델을 15분 동안 먼저 쓴다.
+//  - 웹 검색은 네이버 → Gemini Google 검색 → 뉴스 RSS 순으로 내려가며, 무료 등급의 검색 차단(429)은 1시간 기억한다.
+//  - 실패한 턴은 대화 기록에서 지워 다음 질문이 망가지지 않는다.
+//  - 모델이 준 content(생각 서명 포함)를 그대로 보관해 다음 요청이 유효하다.
+// 개선 포인트
+//  - [리뷰-G1] 대화 기록(history)이 /초기화 전까지 계속 늘어난다. 길어질수록 요청이 느려지고 무료 한도를 빨리 쓴다.
+//              → 최근 N턴(예: 20)만 남기거나, 오래된 턴을 요약해 줄이는 것을 권장.
+//  - [리뷰] 도구 호출을 Promise.all로 동시에 실행한다. 지금 도구들은 저장을 동기로 끝내 충돌이 없지만,
+//           나중에 await가 끼는 쓰기 도구를 추가하면 같은 목록을 동시에 덮어쓸 수 있다.
+// ============================================================================
 const { GoogleGenAI } = require("@google/genai");
 const feeds = require("./feeds");
 const { naverSearch, naverReady } = require("./naver");
@@ -116,6 +130,8 @@ class GeminiProvider {
     const ai = new GoogleGenAI({ apiKey, httpOptions: { timeout: REQUEST_TIMEOUT_MS } });
     let chain = this.modelChain(model || DEFAULT_MODEL);
     const start = this.history.length;
+    // [리뷰-G1] 여기서 계속 쌓인다. 예: if (this.history.length > 40) 오래된 턴부터 잘라내기
+    //           (함수 호출과 그 결과는 짝으로 함께 지워야 요청이 유효하다)
     this.history.push({ role: "user", parts: [{ text: userText }] });
     try {
       for (let turn = 0; turn < 10; turn++) {

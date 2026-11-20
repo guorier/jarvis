@@ -1,4 +1,15 @@
 // 외부 정보: 날씨(Open-Meteo), 뉴스(Google News RSS), 환율(open.er-api.com). 모두 API 키가 필요 없다.
+// ============================================================================
+// [코드 리뷰] src/feeds.js
+// 좋은 점
+//  - 모든 요청에 10초 제한(AbortSignal.timeout)이 있어 네트워크가 멈춰도 화면이 기다리지 않는다.
+//  - 도시 좌표(geocode)를 캐시해 날씨 요청마다 두 번 부르지 않는다.
+// 개선 포인트
+//  - [리뷰] 뉴스 RSS를 정규식으로 읽는다. Google 뉴스 형식에선 잘 되지만, 형식이 조금만 바뀌어도 제목이 비거나 틀린다.
+//           실패 시 빈 목록으로 보이니, 항목 수가 0이면 로그를 남기면 원인 찾기가 쉽다.
+//  - [리뷰] getRates는 응답에 통화가 빠지면 NaN을 돌려준다(화면에 "NaN"). 값 확인 후 null로 처리할 것.
+//  - [리뷰] 날씨 hourly는 현재 시각 이후 12시간을 자르는데, 자정 근처에 다음 날 데이터가 부족하면 12개보다 적을 수 있다(표시는 문제없음).
+// ============================================================================
 
 async function getJson(url) {
   const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
@@ -104,6 +115,7 @@ async function getRates() {
   const d = await getJson("https://open.er-api.com/v6/latest/USD");
   const krw = d.rates.KRW;
   // 1 단위 외화 = ? 원
+  // [리뷰] d.rates[code]가 없으면 NaN이 된다 → (krw && d.rates[code]) ? ... : null 로 막을 것.
   const toKrw = (code) => +(krw / d.rates[code]).toFixed(code === "JPY" ? 2 : 1);
   return {
     updated: d.time_last_update_utc,
