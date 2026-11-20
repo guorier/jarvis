@@ -142,43 +142,6 @@ async function updateSlow() {
   }
 }
 
-// ---------- 스마트홈 ----------
-async function updateHome() {
-  const box = $("#home-devices");
-  try {
-    const r = await jarvis.ha.states();
-    if (!r.configured) {
-      box.innerHTML = `<div class="empty">설정(⚙)에서 Home Assistant 주소와 토큰을 입력하면 기기를 제어할 수 있습니다.</div>`;
-      return;
-    }
-    if (!r.devices.length) {
-      box.innerHTML = `<div class="empty">등록된 기기가 없습니다. 설정에서 entity_id를 추가하세요.</div>`;
-      return;
-    }
-    box.innerHTML = r.devices
-      .map(
-        (d) => `<button class="device ${d.state === "on" ? "on" : ""}" data-id="${esc(d.entity_id)}" title="${esc(d.entity_id)}">
-        <b>${esc(d.name || d.entity_id)}</b><small>${esc(d.state === "on" ? "켜짐" : d.state === "off" ? "꺼짐" : d.state)}</small></button>`
-      )
-      .join("");
-  } catch (e) {
-    box.innerHTML = `<div class="empty">연결 실패: ${esc(e.message)}</div>`;
-  }
-}
-
-$("#home-devices").addEventListener("click", async (e) => {
-  const btn = e.target.closest(".device");
-  if (!btn) return;
-  Sound.click();
-  try {
-    await jarvis.ha.call(btn.dataset.id, "toggle");
-    setTimeout(updateHome, 600);
-  } catch (err) {
-    pushNotice(err.message, "error");
-  }
-});
-$("#home-refresh").addEventListener("click", updateHome);
-
 // ---------- 날씨 ----------
 async function updateWeather() {
   try {
@@ -215,28 +178,25 @@ async function updateWeather() {
 }
 
 // ---------- 일정 (달력) ----------
-// 공간을 아끼려고 한 달 대신 2주(이번 주 + 다음 주)만 보여 준다. 화살표는 한 주씩 이동.
-const weekStart = (d) => {
-  const s = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  s.setDate(s.getDate() - s.getDay());
-  return s;
-};
-const cal = { start: weekStart(new Date()), selected: todayStr() };
+// 한 달 달력. 앞뒤 달의 날짜로 주를 채우고(흐리게), 그 달에 필요한 주 수(4~6주)만 그린다. 화살표는 한 달씩 이동.
+const cal = { y: new Date().getFullYear(), m: new Date().getMonth(), selected: todayStr() };
 
 function renderCalendar() {
   const events = State.data.events;
   const has = new Set(events.map((e) => e.date));
   const today = todayStr();
-  const end = new Date(cal.start);
-  end.setDate(end.getDate() + 13);
-  const label = `${cal.start.getMonth() + 1}.${cal.start.getDate()} – ${end.getMonth() + 1}.${end.getDate()}`;
-  let html = `<div class="cal-head"><button data-nav="-1" title="이전 주">◀</button><span>${label}</span><button data-nav="1" title="다음 주">▶</button></div>`;
+  const first = new Date(cal.y, cal.m, 1);
+  const daysInMonth = new Date(cal.y, cal.m + 1, 0).getDate();
+  const weeks = Math.ceil((first.getDay() + daysInMonth) / 7);
+  const start = new Date(cal.y, cal.m, 1 - first.getDay());
+  const label = `${cal.y}.${pad(cal.m + 1)}`;
+  let html = `<div class="cal-head"><button data-nav="-1" title="이전 달">◀</button><span>${label}</span><button data-nav="1" title="다음 달">▶</button></div>`;
   html += DOW.map((d) => `<div class="dow">${d}</div>`).join("");
-  for (let i = 0; i < 14; i++) {
-    const d = new Date(cal.start);
-    d.setDate(cal.start.getDate() + i);
+  for (let i = 0; i < weeks * 7; i++) {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
     const ds = todayStr(d);
-    const cls = ["day", ds < today && "other", ds === today && "today", ds === cal.selected && "sel", has.has(ds) && "has"]
+    const cls = ["day", d.getMonth() !== cal.m && "other", ds === today && "today", ds === cal.selected && "sel", has.has(ds) && "has"]
       .filter(Boolean)
       .join(" ");
     html += `<div class="${cls}" data-date="${ds}">${d.getDate()}</div>`;
@@ -263,7 +223,9 @@ function renderEvents() {
 $("#calendar").addEventListener("click", (e) => {
   const nav = e.target.closest("[data-nav]");
   if (nav) {
-    cal.start.setDate(cal.start.getDate() + 7 * Number(nav.dataset.nav));
+    const d = new Date(cal.y, cal.m + Number(nav.dataset.nav), 1);
+    cal.y = d.getFullYear();
+    cal.m = d.getMonth();
     return renderCalendar();
   }
   const day = e.target.closest(".day");

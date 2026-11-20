@@ -112,17 +112,8 @@ function logLine(text, level = "info", at = Date.now()) {
   box.scrollTop = box.scrollHeight;
 }
 
-// ===== 알림 센터 =====
-const notices = [];
+// ===== 알림 =====
+// 알림 패널은 없앴다. 알림은 시스템 로그에 남기고, 리마인더는 메인 프로세스가 Windows 알림으로 띄운다.
 function pushNotice(text, kind = "info") {
-  notices.unshift({ text, kind, at: Date.now() });
-  notices.length = Math.min(notices.length, 50);
-  const list = $("#notice-list");
-  list.innerHTML = notices
-    .map((n) => {
-      const d = new Date(n.at);
-      return `<li class="${n.kind}"><span class="grow">${esc(n.text)}</span><small>${pad(d.getHours())}:${pad(d.getMinutes())}</small></li>`;
-    })
-    .join("");
-  $("#notice-count").textContent = notices.length;
+  logLine(kind === "reminder" ? `⏰ ${text}` : text, kind === "error" ? "error" : "info");
 }

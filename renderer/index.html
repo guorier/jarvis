@@ -27,18 +27,30 @@
   </svg>
   <div class="vignette"></div>
 
-  <!-- 부팅 시퀀스 -->
+  <!-- 부팅 시퀀스 — 참고 영상(JARVIS START UP) 0~7.5초 구성을 장면별로 옮김. 모듈 전체는 화면 가운데.
+       1장면(0~4.6s): 선 3줄 → "Initiating system 1...." + 커서 → 위·아래 선이 벌어져 창이 열림
+                      → 점검 목록(OK)·코드 줄이 올라감 → 선이 좁혀지며 진행 칸 → "System 1 loaded..." → 어두워짐
+       2장면(5.15~7.95s): 검은 화면에 링이 조립 → 충격파 → J.A.R.V.I.S 글자가 확대되며 들어옴 → 링 회전 -->
   <div id="boot">
-    <div class="boot-inner">
-      <div class="boot-title">J.A.R.V.I.S.</div>
-      <div class="boot-sub">JUST A RATHER VERY INTELLIGENT SYSTEM</div>
+    <div class="boot-stage" id="boot-stage">
+      <!-- 좌표는 영상 프레임 640×224 기준. 양 끝 선은 화면 끝을 조금 넘는 -420~1060까지(overflow visible).
+           더 길게 그리면 빛번짐 계산 영역이 커져 첫 화면이 느려지고 끊긴다 -->
+      <svg class="boot-frame" viewBox="0 0 640 224" preserveAspectRatio="none" aria-hidden="true">
+        <path class="top" d="M -420 78 H 65 L 105 57 H 475 L 520 78 H 585 L 620 57 H 1060" />
+        <path class="mid" d="M -420 108 H 1060" />
+        <path class="bot" d="M -420 138 H 215 L 245 165 H 570 L 600 138 H 1060" />
+      </svg>
+      <div class="boot-flare" aria-hidden="true"></div>
+      <div class="boot-head"><span id="boot-text"></span><span id="boot-dots"></span><i class="boot-cursor"></i></div>
       <div id="boot-log"></div>
-      <div class="boot-bar"><i id="boot-progress"></i></div>
+      <div id="boot-code" aria-hidden="true"></div>
+      <div class="boot-hatch" aria-hidden="true"></div>
+      <div class="boot-cells" id="boot-cells"></div>
     </div>
-    <div class="welcome" id="welcome" hidden>
-      <div class="wl-title" id="wl-title">WELCOME BACK</div>
-      <div class="wl-name" id="wl-name"></div>
-      <div class="wl-sub">ALL SYSTEMS NOMINAL</div>
+
+    <!-- 2장면 링: 호 좌표는 intro.js의 buildRings()가 원 위에 정확히 계산해 그린다 -->
+    <div class="boot-rings" id="boot-rings" aria-hidden="true">
+      <svg viewBox="0 0 400 400" id="boot-rings-svg"></svg>
     </div>
   </div>
 
@@ -165,57 +177,61 @@
               <path d="M 300 262 H 350" />
             </g>
 
-            <!-- 바깥 테두리 + 브래킷 장식 -->
+            <!-- 바깥 테두리 (조립 때 선이 먼저 그려진다) -->
             <circle cx="200" cy="200" r="194" class="em-rim" />
             <circle cx="200" cy="200" r="186" class="em-rim-inner" />
-            <!-- 왼쪽 위 브래킷 (222°~247°) — 테두리를 따라 시계 방향으로 회전 -->
-            <g class="ring rot-bracket">
+
+            <!-- .asm = 조립 회전용 래퍼(--i: 들어오는 순서, --from: 시작 각도). 안쪽 .ring이 평소 움직임 -->
+            <!-- 고정 장식: 오른쪽 브래킷 + 세로 줄무늬, 오른쪽 아래 호, 왼쪽 점 3개 -->
+            <g class="asm" style="--i:0;--from:-90deg">
+              <path d="M 338.2 66.5 A 192 192 0 0 1 386.3 246.4" class="em-bracket" />
+              <path d="M 389.1 173.4 A 191 191 0 0 1 385.3 245.8" class="em-grill" />
+              <path d="M 347.8 324.1 A 193 193 0 0 1 250.0 386.4" class="em-bracket-thin" />
+              <circle cx="9.5" cy="188" r="1.6" class="em-dot" /><circle cx="9" cy="196" r="1.6" class="em-dot" /><circle cx="9.2" cy="204" r="1.6" class="em-dot" />
+            </g>
+            <!-- 왼쪽 위 브래킷 — 테두리를 따라 찾듯이 돌았다 멈췄다 한다 -->
+            <g class="asm" style="--i:1;--from:-260deg"><g class="ring rot-bracket">
               <path d="M 59.0 72.9 A 190 190 0 0 1 125.8 25.1" class="em-bracket" />
               <path d="M 63.3 76.8 A 184 184 0 0 1 128.1 30.6" class="em-bracket-thin" />
-            </g>
-            <!-- 오른쪽 브래킷 (316°~14°) + 세로 줄무늬 -->
-            <path d="M 338.2 66.5 A 192 192 0 0 1 386.3 246.4" class="em-bracket" />
-            <path d="M 389.1 173.4 A 191 191 0 0 1 385.3 245.8" class="em-grill" />
-            <!-- 오른쪽 아래 (40°~75°) -->
-            <path d="M 347.8 324.1 A 193 193 0 0 1 250.0 386.4" class="em-bracket-thin" />
-            <!-- 왼쪽 점 3개 -->
-            <circle cx="9.5" cy="188" r="1.6" class="em-dot" /><circle cx="9" cy="196" r="1.6" class="em-dot" /><circle cx="9.2" cy="204" r="1.6" class="em-dot" />
-
-            <!-- 간격이 넓은 짧은 눈금 (천천히 회전) -->
-            <g class="spin"><g class="ring rot-b">
-              <circle cx="200" cy="200" r="169" class="em-ticks" />
             </g></g>
+
+            <!-- 간격이 넓은 짧은 눈금 (천천히 일정하게 회전) -->
+            <g class="asm" style="--i:2;--from:220deg"><g class="spin"><g class="ring rot-b">
+              <circle cx="200" cy="200" r="169" class="em-ticks" />
+            </g></g></g>
             <circle cx="200" cy="200" r="157" class="em-line" />
 
-            <!-- 하늘색 띠: 9시 → 위 → 오른쪽 4~5시 (왼쪽 아래는 비어 있음) — 통째로 시계 방향 회전 -->
-            <g class="ring rot-band">
+            <!-- 하늘색 띠: 9시 → 위 → 오른쪽 4~5시 — 좌우로 천천히 흔들린다 -->
+            <g class="asm" style="--i:3;--from:-320deg"><g class="ring rot-band">
               <path d="M 69 200 A 131 131 0 1 1 307.3 275.1" class="em-band" />
               <path d="M 307.3 275.1 A 131 131 0 0 1 269.4 311.1" class="em-band tail" />
               <path d="M 69 200 A 131 131 0 1 1 269.4 311.1" class="em-band-lines" />
               <path d="M 52 200 A 148 148 0 1 1 295.1 313.4" class="em-band-edge" />
-            </g>
+            </g></g>
 
-            <!-- 왼쪽 노란 호 + 아래 끝 알약 테두리 — 함께 반시계 방향으로 회전 -->
-            <g class="ring rot-yellow">
+            <!-- 왼쪽 노란 호 + 아래 끝 알약 — 반시계로 찾듯이 돈다 -->
+            <g class="asm" style="--i:4;--from:280deg"><g class="ring rot-yellow">
               <path d="M 92.4 222.87 A 110 110 0 0 1 118.26 126.4" class="em-yellow" />
               <path d="M 107.75 259.91 A 110 110 0 0 1 94.81 232.16" class="em-pill" />
               <path d="M 107.75 259.91 A 110 110 0 0 1 94.81 232.16" class="em-pill-hole" />
-            </g>
+            </g></g>
 
-            <!-- 위쪽 청록 캡슐 -->
-            <rect x="180" y="85.6" width="13" height="4.2" rx="2.1" class="em-capsule" />
-            <path d="M 200 89 L 226 90.5" class="em-capsule-line" />
 
             <!-- 안쪽 밝은 링 + 점선 링 -->
+            <!-- 안쪽 밝은 링은 숨 쉬듯 밝아졌다 어두워지고, 점선 링은 반대로 천천히 돈다 -->
             <circle cx="200" cy="200" r="104" class="em-inner" />
-            <circle cx="200" cy="200" r="97" class="em-inner-dots" />
+            <g class="asm" style="--i:5;--from:-200deg"><g class="ring rot-dots">
+              <circle cx="200" cy="200" r="97" class="em-inner-dots" />
+            </g></g>
 
-            <!-- 원판 + 희미한 원 무늬 + 글자 + 아래 가로선 -->
-            <circle cx="200" cy="200" r="93" fill="url(#discFill)" />
-            <circle cx="200" cy="204" r="50" class="em-ghost" />
-            <circle cx="200" cy="204" r="42" class="em-ghost dashed" />
-            <text x="200" y="211" class="em-title">J.A.R.V.I.S.</text>
-            <path d="M 146 250 H 178 M 185 250 H 254" class="em-under" />
+            <!-- 원판 + 희미한 원 무늬 + 글자 + 아래 가로선 (조립 마지막에 나타난다) -->
+            <g class="asm-late">
+              <circle cx="200" cy="200" r="93" fill="url(#discFill)" />
+              <circle cx="200" cy="204" r="50" class="em-ghost" />
+              <circle cx="200" cy="204" r="42" class="em-ghost dashed" />
+              <text x="200" y="211" class="em-title">J.A.R.V.I.S.</text>
+              <path d="M 146 250 H 178 M 185 250 H 254" class="em-under" />
+            </g>
           </svg>
         </div>
 
@@ -323,16 +339,6 @@
       <section class="panel grow" id="p-proc" style="--i:3">
         <header><span>PROCESSES</span><i class="hl"></i><em id="proc-count">--</em></header>
         <table class="proc"><thead><tr><th>이름</th><th>CPU</th><th>MEM</th></tr></thead><tbody id="proc-list"></tbody></table>
-      </section>
-
-      <section class="panel" id="p-notice" style="--i:3">
-        <header><span>NOTIFICATIONS</span><i class="hl"></i><em id="notice-count">0</em></header>
-        <ul id="notice-list" class="list small"></ul>
-      </section>
-
-      <section class="panel" id="p-home" style="--i:4">
-        <header><span>SMART HOME</span><i class="hl"></i><button class="icon-btn" id="home-refresh" title="새로고침">↻</button></header>
-        <div id="home-devices" class="devices"></div>
       </section>
     </aside>
 

@@ -38,7 +38,12 @@ function createWindow() {
     }
   });
   if (!process.env.JARVIS_SNAPSHOT && !devSize) win.maximize();
-  win.loadFile(path.join(__dirname, "renderer", "index.html"));
+  // 개발용: JARVIS_INTRO_SLOW=4 이면 로딩 연출 장면 간격을 4배로 늘려 캡처로 확인하기 쉽게 한다
+  // JARVIS_FPS=1 이면 로딩 중 프레임 간격(끊김)을 재서 콘솔에 남긴다
+  const query = {};
+  if (process.env.JARVIS_INTRO_SLOW) query.slow = process.env.JARVIS_INTRO_SLOW;
+  if (process.env.JARVIS_FPS) query.fps = "1";
+  win.loadFile(path.join(__dirname, "renderer", "index.html"), Object.keys(query).length ? { query } : undefined);
 
   // 개발용: JARVIS_DEBUG=1이면 화면 콘솔을 터미널에 출력, JARVIS_SNAPSHOT=경로면 8초 뒤 화면을 캡처한다.
   if (process.env.JARVIS_DEBUG) {
@@ -48,7 +53,8 @@ function createWindow() {
     // JARVIS_SNAPSHOT_TIMES="600,1500,3000" 이면 그 시점마다 <경로>-<ms>.png 로 여러 장 찍는다
     const times = (process.env.JARVIS_SNAPSHOT_TIMES || "8000").split(",").map(Number);
     const base = process.env.JARVIS_SNAPSHOT.replace(/\.png$/i, "");
-    win.webContents.once("did-finish-load", async () => {
+    // dom-ready 기준: did-finish-load는 웹 글꼴을 기다려 늦게 오므로 로딩 연출 시각과 어긋난다
+    win.webContents.once("dom-ready", async () => {
       const vp = await win.webContents.executeJavaScript("JSON.stringify({w:innerWidth,h:innerHeight,dpr:devicePixelRatio})");
       console.log("viewport", vp, "maximized", win.isMaximized());
       for (const t of times) {

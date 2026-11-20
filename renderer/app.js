@@ -100,7 +100,6 @@ const Palette = {
       { icon: "☀", label: "오늘 브리핑", hint: "AI", run: () => Chat.ask("오늘 날씨, 일정, 할 일을 묶어서 짧게 브리핑해줘") },
       { icon: "⛅", label: "날씨 새로고침", hint: "/날씨", run: updateWeather },
       { icon: "📰", label: "뉴스 새로고침", hint: "/뉴스", run: updateNews },
-      { icon: "🏠", label: "스마트홈 새로고침", hint: "", run: updateHome },
       { icon: "⟲", label: "대화 초기화", hint: "/초기화", run: () => handleSlash("/초기화") },
       { icon: "⚙", label: "설정 열기", hint: "", run: openSettings },
       ...State.data.launchers.map((l) => ({ icon: "🚀", label: `실행: ${l.name}`, hint: l.target, run: () => launchById(l.id) })),
@@ -254,7 +253,6 @@ $("#settings-form").addEventListener("submit", async (e) => {
     renderAll();
     if (cityChanged) updateWeather();
     if (kwChanged) updateNews();
-    updateHome();
     msg.className = "";
     msg.textContent = "저장했습니다.";
     logLine("설정 저장");
@@ -284,7 +282,6 @@ jarvis.onDataChanged(async (key) => {
   if (key === "todos") renderTodos(), showTab("todos");
   if (key === "events") renderEvents(), renderDayStrip(), showTab("events");
   if (key === "memos") renderMemos(), showTab("memos");
-  if (key === "devices") setTimeout(updateHome, 500);
 });
 
 // ---------- 시작 ----------
@@ -294,14 +291,17 @@ jarvis.onDataChanged(async (key) => {
   renderAll();
   Globe.init($("#globe"));
   initMonitors();
+  // 시스템 정보 수집(CPU·프로세스 등)은 메인 프로세스를 잠깐 바쁘게 해 화면이 멈칫한다.
+  // 그래서 로딩 장면 사이 검은 화면일 때 처음 불러온다 (로딩을 건너뛰면 바로).
+  Intro.onBlack = () => {
+    updateFast();
+    updateSlow();
+    updateWeather();
+    updateNews();
+    updateRates();
+  };
   const boot = bootSequence();
   logLine("J.A.R.V.I.S. 시작");
-  updateFast();
-  updateSlow();
-  updateWeather();
-  updateNews();
-  updateRates();
-  updateHome();
   await boot;
   Chat.add("ai", miniMarkdown(`${greetingFor(new Date().getHours())}, ${State.data.settings.userName}. 무엇을 도와드릴까요?\n\`/도움말\`로 명령 목록을, **Ctrl+K**로 커맨드 팔레트를 열 수 있습니다.`));
   pushNotice("시스템이 온라인 상태입니다.", "info");
@@ -310,7 +310,6 @@ jarvis.onDataChanged(async (key) => {
   setInterval(tickClock, 1000);
   setInterval(updateFast, 2000);
   setInterval(updateSlow, 10000);
-  setInterval(updateHome, 30000);
   setInterval(updateWeather, 30 * 60 * 1000);
   setInterval(updateNews, 15 * 60 * 1000);
   setInterval(updateRates, 60 * 60 * 1000);

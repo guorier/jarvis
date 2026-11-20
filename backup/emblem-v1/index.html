@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'" />
+  <title>J.A.R.V.I.S.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- 배경: 블루프린트 격자 + 회로선 -->
+  <div class="bg-grid"></div>
+  <svg class="bg-circuit" viewBox="0 0 1600 900" preserveAspectRatio="none" aria-hidden="true">
+    <g fill="none" stroke="currentColor" stroke-width="1">
+      <path d="M0 210 H260 L300 250 H520" /><path d="M0 640 H180 L220 600 H400" />
+      <path d="M1600 180 H1380 L1340 220 H1120" /><path d="M1600 560 H1420 L1380 600 H1200 L1170 630" />
+      <path d="M560 0 V70 L600 110 V160" /><path d="M1040 900 V820 L1000 780 V740" />
+      <path d="M300 900 V840 L340 800 H470" /><path d="M1300 0 V60 L1260 100 H1160" />
+    </g>
+    <g fill="currentColor">
+      <circle cx="520" cy="250" r="3" /><circle cx="400" cy="600" r="3" /><circle cx="1120" cy="220" r="3" />
+      <circle cx="1170" cy="630" r="3" /><circle cx="600" cy="160" r="3" /><circle cx="1000" cy="740" r="3" />
+      <circle cx="470" cy="800" r="3" /><circle cx="1160" cy="100" r="3" />
+    </g>
+  </svg>
+  <div class="vignette"></div>
+
+  <!-- 부팅 시퀀스 -->
+  <div id="boot">
+    <div class="boot-inner">
+      <div class="boot-title">J.A.R.V.I.S.</div>
+      <div class="boot-sub">JUST A RATHER VERY INTELLIGENT SYSTEM</div>
+      <div id="boot-log"></div>
+      <div class="boot-bar"><i id="boot-progress"></i></div>
+    </div>
+    <div class="welcome" id="welcome" hidden>
+      <div class="wl-title" id="wl-title">WELCOME BACK</div>
+      <div class="wl-name" id="wl-name"></div>
+      <div class="wl-sub">ALL SYSTEMS NOMINAL</div>
+    </div>
+  </div>
+
+  <div id="app">
+    <!-- ===== 상단 날짜 띠 ===== -->
+    <nav class="daystrip">
+      <span class="ds-mark">J.A.R.V.I.S.</span>
+      <ol id="daystrip"></ol>
+      <span class="ds-month" id="ds-month">--</span>
+    </nav>
+
+    <!-- ===== 왼쪽 ===== -->
+    <aside class="col col-left">
+      <section class="panel chrono" style="--i:0">
+        <div class="ring-widget date-ring">
+          <svg viewBox="0 0 120 120" aria-hidden="true">
+            <circle class="rw-ticks" cx="60" cy="60" r="56" />
+            <circle class="rw-track" cx="60" cy="60" r="48" />
+            <circle class="rw-arc" id="month-arc" cx="60" cy="60" r="48" />
+            <circle class="rw-inner" cx="60" cy="60" r="40" />
+          </svg>
+          <div class="rw-text">
+            <small id="date-month">--월</small>
+            <b id="date-day">--</b>
+            <small id="date-dow">---</small>
+          </div>
+        </div>
+        <div class="ring-widget clock-ring">
+          <svg viewBox="0 0 120 120" aria-hidden="true">
+            <circle class="rw-ticks major" cx="60" cy="60" r="56" />
+            <circle class="rw-track" cx="60" cy="60" r="48" />
+            <circle class="rw-arc" id="sec-arc" cx="60" cy="60" r="48" />
+            <circle class="rw-inner" cx="60" cy="60" r="40" />
+          </svg>
+          <div class="rw-text">
+            <b id="clock">--:--</b>
+            <small id="clock-s">--</small>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel grow" id="p-system" style="--i:1">
+        <header><span>SYSTEM</span><i class="hl"></i><em id="sys-temp">--</em></header>
+        <div class="monitors">
+          <div class="mon" data-mon="cpu">
+            <div class="mon-head"><span>CPU</span><em id="cpu-cores"></em><b id="cpu-val">--</b></div>
+            <canvas class="mon-graph" id="g-cpu"></canvas>
+            <div class="mon-stats"><div><small>SPD</small><b id="st-spd">--</b></div><div><small>TASKS</small><b id="st-tasks">--</b></div></div>
+          </div>
+          <div class="mon" data-mon="mem">
+            <div class="mon-head"><span>MEMORY</span><b id="mem-val">--</b></div>
+            <canvas class="mon-graph" id="g-mem"></canvas>
+            <div class="mon-stats"><div><small>USED</small><b id="sys-ram">--</b></div><div><small>SWAP</small><b id="st-swap">--</b></div></div>
+          </div>
+          <div class="mon" data-mon="gpu">
+            <div class="mon-head"><span>GPU</span><b id="gpu-val">--</b></div>
+            <canvas class="mon-graph" id="g-gpu"></canvas>
+            <div class="mon-stats"><div><small>VIDEO</small><b id="st-gvideo">--</b></div><div><small>VRAM</small><b id="st-vram">--</b></div></div>
+          </div>
+          <div class="mon" data-mon="npu">
+            <div class="mon-head"><span>NPU</span><b id="npu-val">--</b></div>
+            <canvas class="mon-graph" id="g-npu"></canvas>
+            <div class="mon-stats"><div><small>MEM</small><b id="st-nmem">--</b></div><div><small>STATE</small><b id="st-nstate">--</b></div></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" id="p-net" style="--i:2">
+        <header><span>GLOBE · NETWORK</span><i class="hl"></i><em id="globe-label">--</em></header>
+        <canvas id="globe"></canvas>
+        <div class="net">
+          <div><small>▼ 다운로드</small><b id="net-down">--</b></div>
+          <div><small>▲ 업로드</small><b id="net-up">--</b></div>
+        </div>
+        <canvas id="net-chart" height="40"></canvas>
+        <div id="disks"></div>
+      </section>
+    </aside>
+
+    <!-- ===== 가운데 ===== -->
+    <main class="col col-center">
+      <div class="topbar" style="--i:1">
+        <div id="greeting">시스템 온라인</div>
+        <div class="status-line"><i class="dot"></i><span id="ai-status">대기 중</span></div>
+      </div>
+
+      <div class="stage" style="--i:2">
+        <div class="orbit left">
+          <small>LAUNCH</small>
+          <ul id="dock-launchers" class="orbit-list"></ul>
+        </div>
+
+        <div id="core" class="core idle" aria-label="J.A.R.V.I.S. 코어">
+          <svg viewBox="0 0 400 400" aria-hidden="true">
+            <defs>
+              <radialGradient id="emBg" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#0b1b22" />
+                <stop offset="80%" stop-color="#071319" />
+                <stop offset="100%" stop-color="#04090c" />
+              </radialGradient>
+              <radialGradient id="discFill" cx="50%" cy="45%" r="55%">
+                <stop offset="0%" stop-color="#0d1d24" />
+                <stop offset="100%" stop-color="#050c10" />
+              </radialGradient>
+              <linearGradient id="bandGrad" x1="0" y1="0" x2="0.35" y2="1">
+                <stop offset="0%" stop-color="#7cc8f2" />
+                <stop offset="45%" stop-color="#4fa6dc" />
+                <stop offset="100%" stop-color="#2e78ad" stop-opacity=".55" />
+              </linearGradient>
+              <filter id="emShadow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="9" />
+              </filter>
+            </defs>
+
+            <!-- 바탕: 어두운 원 + 바깥 그림자 -->
+            <circle cx="200" cy="200" r="199" fill="#000" opacity=".7" filter="url(#emShadow)" />
+            <circle cx="200" cy="200" r="196" fill="url(#emBg)" />
+
+            <!-- 하단 오른쪽의 희미한 회로선 -->
+            <g class="em-circuit">
+              <path d="M 262 300 L 292 330 H 338" />
+              <path d="M 236 322 V 356 H 284 L 300 372" />
+              <path d="M 150 330 H 196 V 368" />
+              <path d="M 300 262 H 350" />
+            </g>
+
+            <!-- 바깥 테두리 + 브래킷 장식 -->
+            <circle cx="200" cy="200" r="194" class="em-rim" />
+            <circle cx="200" cy="200" r="186" class="em-rim-inner" />
+            <!-- 왼쪽 위 브래킷 (222°~247°) — 테두리를 따라 시계 방향으로 회전 -->
+            <g class="ring rot-bracket">
+              <path d="M 59.0 72.9 A 190 190 0 0 1 125.8 25.1" class="em-bracket" />
+              <path d="M 63.3 76.8 A 184 184 0 0 1 128.1 30.6" class="em-bracket-thin" />
+            </g>
+            <!-- 오른쪽 브래킷 (316°~14°) + 세로 줄무늬 -->
+            <path d="M 338.2 66.5 A 192 192 0 0 1 386.3 246.4" class="em-bracket" />
+            <path d="M 389.1 173.4 A 191 191 0 0 1 385.3 245.8" class="em-grill" />
+            <!-- 오른쪽 아래 (40°~75°) -->
+            <path d="M 347.8 324.1 A 193 193 0 0 1 250.0 386.4" class="em-bracket-thin" />
+            <!-- 왼쪽 점 3개 -->
+            <circle cx="9.5" cy="188" r="1.6" class="em-dot" /><circle cx="9" cy="196" r="1.6" class="em-dot" /><circle cx="9.2" cy="204" r="1.6" class="em-dot" />
+
+            <!-- 간격이 넓은 짧은 눈금 (천천히 회전) -->
+            <g class="spin"><g class="ring rot-b">
+              <circle cx="200" cy="200" r="169" class="em-ticks" />
+            </g></g>
+            <circle cx="200" cy="200" r="157" class="em-line" />
+
+            <!-- 하늘색 띠: 9시 → 위 → 오른쪽 4~5시 (왼쪽 아래는 비어 있음) — 통째로 시계 방향 회전 -->
+            <g class="ring rot-band">
+              <path d="M 69 200 A 131 131 0 1 1 307.3 275.1" class="em-band" />
+              <path d="M 307.3 275.1 A 131 131 0 0 1 269.4 311.1" class="em-band tail" />
+              <path d="M 69 200 A 131 131 0 1 1 269.4 311.1" class="em-band-lines" />
+              <path d="M 52 200 A 148 148 0 1 1 295.1 313.4" class="em-band-edge" />
+            </g>
+
+            <!-- 왼쪽 노란 호 + 아래 끝 알약 테두리 — 함께 반시계 방향으로 회전 -->
+            <g class="ring rot-yellow">
+              <path d="M 92.4 222.87 A 110 110 0 0 1 118.26 126.4" class="em-yellow" />
+              <path d="M 107.75 259.91 A 110 110 0 0 1 94.81 232.16" class="em-pill" />
+              <path d="M 107.75 259.91 A 110 110 0 0 1 94.81 232.16" class="em-pill-hole" />
+            </g>
+
+
+            <!-- 안쪽 밝은 링 + 점선 링 -->
+            <circle cx="200" cy="200" r="104" class="em-inner" />
+            <circle cx="200" cy="200" r="97" class="em-inner-dots" />
+
+            <!-- 원판 + 희미한 원 무늬 + 글자 + 아래 가로선 -->
+            <circle cx="200" cy="200" r="93" fill="url(#discFill)" />
+            <circle cx="200" cy="204" r="50" class="em-ghost" />
+            <circle cx="200" cy="204" r="42" class="em-ghost dashed" />
+            <text x="200" y="211" class="em-title">J.A.R.V.I.S.</text>
+            <path d="M 146 250 H 178 M 185 250 H 254" class="em-under" />
+          </svg>
+        </div>
+
+        <div class="orbit right">
+          <small>ROUTINE</small>
+          <ul id="dock-routines" class="orbit-list"></ul>
+        </div>
+      </div>
+
+      <section class="panel chat" style="--i:3">
+        <header><span>ASSISTANT</span><i class="hl"></i><button class="icon-btn" id="chat-reset" title="대화 초기화">⟲</button></header>
+        <div id="chat-log"></div>
+        <form id="chat-form">
+          <input id="chat-input" autocomplete="off" placeholder="무엇을 도와드릴까요? ( / 로 명령, Ctrl+K 팔레트 )" />
+          <button type="submit" class="send">SEND</button>
+        </form>
+      </section>
+
+      <!-- 2번 이미지 스타일 원형 버튼 독 -->
+      <nav class="round-dock" style="--i:4">
+        <button class="rbtn" id="open-palette" title="커맨드 팔레트 (Ctrl+K)">
+          <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h7" /><circle cx="18" cy="16" r="3" /><path d="M20.2 18.2 22 20" /></svg><span>명령</span>
+        </button>
+        <button class="rbtn" data-action="briefing" title="오늘 브리핑">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1" /></svg><span>브리핑</span>
+        </button>
+        <button class="rbtn" data-action="sysreport" title="시스템 점검">
+          <svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1" /><rect x="9.5" y="9.5" width="5" height="5" /><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4" /></svg><span>시스템</span>
+        </button>
+        <button class="rbtn" data-action="news" title="뉴스 새로고침">
+          <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="1" /><path d="M7 9h6M7 12h10M7 15h10" /></svg><span>뉴스</span>
+        </button>
+        <button class="rbtn" data-action="weather" title="날씨 새로고침">
+          <svg viewBox="0 0 24 24"><path d="M7 18h10a4 4 0 0 0 0-8 6 6 0 0 0-11.5 1.5A3.3 3.3 0 0 0 7 18Z" /></svg><span>날씨</span>
+        </button>
+        <button class="rbtn" id="tts-toggle" title="음성 응답(TTS)">
+          <svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z" /><path class="tts-wave" d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" /></svg><span>음성</span>
+        </button>
+        <button class="rbtn" data-action="reset" title="대화 초기화">
+          <svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.4-5.7" /><path d="M4 4v4h4" /></svg><span>초기화</span>
+        </button>
+        <button class="rbtn" id="open-settings" title="설정">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M4.9 4.9 7 7M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1 7 17M17 7l2.1-2.1" /><circle cx="12" cy="12" r="7" /></svg><span>설정</span>
+        </button>
+      </nav>
+    </main>
+
+    <!-- ===== 오른쪽 ===== -->
+    <aside class="col col-right">
+      <section class="panel" id="p-weather" style="--i:1">
+        <header><span>WEATHER</span><i class="hl"></i><em id="w-city">--</em></header>
+        <div class="w-now">
+          <div class="ring-widget temp-ring">
+            <svg viewBox="0 0 120 120" aria-hidden="true">
+              <circle class="rw-ticks" cx="60" cy="60" r="56" />
+              <circle class="rw-track" cx="60" cy="60" r="48" />
+              <circle class="rw-arc" id="temp-arc" cx="60" cy="60" r="48" />
+              <circle class="rw-inner" cx="60" cy="60" r="40" />
+            </svg>
+            <div class="rw-text"><b id="w-temp">--°</b><small id="w-icon">·</small></div>
+          </div>
+          <div class="w-info">
+            <div class="w-desc" id="w-desc">--</div>
+            <div class="w-meta" id="w-meta"></div>
+          </div>
+        </div>
+        <div class="w-hourly" id="w-hourly"></div>
+        <div class="w-daily" id="w-daily"></div>
+      </section>
+
+      <section class="panel" id="p-personal" style="--i:2">
+        <header class="tabs">
+          <button data-tab="events" class="on">일정</button>
+          <button data-tab="todos">할 일</button>
+          <button data-tab="memos">메모</button>
+          <i class="hl"></i>
+        </header>
+        <div class="tab" data-tab="events">
+          <div id="calendar"></div>
+          <form id="event-form" class="row-form">
+            <input name="title" placeholder="일정 제목" required />
+            <input name="date" type="date" required />
+            <input name="time" type="time" />
+            <button>+</button>
+          </form>
+          <ul id="event-list" class="list"></ul>
+        </div>
+        <div class="tab hidden" data-tab="todos">
+          <form id="todo-form" class="row-form">
+            <input name="text" placeholder="할 일" required />
+            <input name="due" type="datetime-local" title="리마인더 시각" />
+            <button>+</button>
+          </form>
+          <ul id="todo-list" class="list"></ul>
+        </div>
+        <div class="tab hidden" data-tab="memos">
+          <form id="memo-form" class="memo-form">
+            <textarea name="text" rows="3" placeholder="빠른 메모 (Ctrl+Enter 저장)" required></textarea>
+            <button>저장</button>
+          </form>
+          <ul id="memo-list" class="list"></ul>
+        </div>
+      </section>
+
+      <section class="panel grow" id="p-proc" style="--i:3">
+        <header><span>PROCESSES</span><i class="hl"></i><em id="proc-count">--</em></header>
+        <table class="proc"><thead><tr><th>이름</th><th>CPU</th><th>MEM</th></tr></thead><tbody id="proc-list"></tbody></table>
+      </section>
+
+      <section class="panel" id="p-notice" style="--i:3">
+        <header><span>NOTIFICATIONS</span><i class="hl"></i><em id="notice-count">0</em></header>
+        <ul id="notice-list" class="list small"></ul>
+      </section>
+
+      <section class="panel" id="p-home" style="--i:4">
+        <header><span>SMART HOME</span><i class="hl"></i><button class="icon-btn" id="home-refresh" title="새로고침">↻</button></header>
+        <div id="home-devices" class="devices"></div>
+      </section>
+    </aside>
+
+    <!-- ===== 하단 ===== -->
+    <footer class="bottom">
+      <section class="panel" id="p-news" style="--i:4">
+        <header><span>NEWS</span><i class="hl"></i><em id="news-kw">헤드라인</em><button class="icon-btn" id="news-refresh" title="새로고침">↻</button></header>
+        <ul id="news-list" class="news"></ul>
+      </section>
+      <section class="panel" id="p-rates" style="--i:5">
+        <header><span>EXCHANGE · KRW</span><i class="hl"></i></header>
+        <div id="rates"></div>
+      </section>
+      <section class="panel" id="p-log" style="--i:6">
+        <header><span>SYSTEM LOG</span><i class="hl"></i></header>
+        <div id="log"></div>
+      </section>
+    </footer>
+  </div>
+
+  <!-- 커맨드 팔레트 -->
+  <div id="palette" class="overlay hidden">
+    <div class="palette-box">
+      <input id="palette-input" placeholder="명령 검색… (예: 메모, 실행, 루틴, 검색)" autocomplete="off" />
+      <ul id="palette-list"></ul>
+    </div>
+  </div>
+
+  <!-- 설정 -->
+  <div id="settings" class="overlay hidden">
+    <form class="settings-box" id="settings-form">
+      <header><span>SETTINGS</span><button type="button" class="icon-btn" id="settings-close">✕</button></header>
+      <div class="settings-body">
+        <fieldset>
+          <legend>기본</legend>
+          <label>호칭 <input name="userName" /></label>
+          <label>도시(날씨) <input name="city" placeholder="Seoul" /></label>
+          <label>뉴스 키워드 <input name="newsKeyword" placeholder="비우면 주요 헤드라인" /></label>
+          <label class="check"><input type="checkbox" name="sound" /> 효과음</label>
+          <label class="check"><input type="checkbox" name="tts" /> 음성 응답(TTS)</label>
+        </fieldset>
+        <fieldset>
+          <legend>AI 엔진</legend>
+          <label>사용할 AI
+            <select name="provider"><option value="gemini">Google Gemini (무료 등급)</option><option value="claude">Anthropic Claude (유료)</option></select>
+          </label>
+          <label>Gemini API 키 <input name="geminiKey" type="password" placeholder="aistudio.google.com 에서 무료 발급" /></label>
+          <label>Gemini 모델 <input name="geminiModel" placeholder="gemini-3.8-flash" /></label>
+          <details>
+            <summary>Claude 설정 (유료)</summary>
+            <label>Anthropic API 키 <input name="apiKey" type="password" placeholder="비우면 환경변수 ANTHROPIC_API_KEY 사용" /></label>
+            <label>모델 <input name="model" placeholder="claude-opus-5-5" /></label>
+            <label>추론 강도(effort)
+              <select name="effort"><option value="low">low (빠름)</option><option value="medium">medium</option><option value="high">high</option></select>
+            </label>
+          </details>
+        </fieldset>
+        <fieldset>
+          <legend>웹 검색 (네이버 검색 API · 무료)</legend>
+          <label>Client ID <input name="naverClientId" autocomplete="off" placeholder="developers.naver.com 에서 발급" /></label>
+          <label>Client Secret <input name="naverClientSecret" type="password" autocomplete="off" /></label>
+          <p class="hint">넣으면 AI가 웹문서·블로그·지역(맛집 등)·뉴스를 네이버에서 찾아 답합니다. 비우면 뉴스 검색만 됩니다.</p>
+        </fieldset>
+        <fieldset>
+          <legend>런처 (한 줄에 하나: 이름 | 실행 대상)</legend>
+          <textarea name="launchers" rows="6" placeholder="메모장 | notepad.exe&#10;프로젝트 폴더 | C:\Users\me\project&#10;유튜브 | https://youtube.com"></textarea>
+        </fieldset>
+        <fieldset>
+          <legend>루틴 (JSON)</legend>
+          <textarea name="routines" rows="8" spellcheck="false"></textarea>
+          <p class="hint">단계 종류: <code>launch</code>(launcherId), <code>url</code>(url), <code>notify</code>(text), <code>ha</code>(entity_id, action), <code>wait</code>(ms). 런처 id는 런처 이름과 같습니다.</p>
+        </fieldset>
+        <fieldset>
+          <legend>스마트홈 (Home Assistant)</legend>
+          <label>주소 <input name="haUrl" placeholder="http://homeassistant.local:8123" /></label>
+          <label>장기 액세스 토큰 <input name="haToken" type="password" /></label>
+          <label>기기 (한 줄에 하나: entity_id | 이름)
+            <textarea name="haEntities" rows="4" placeholder="light.living_room | 거실 조명&#10;switch.aircon | 에어컨"></textarea>
+          </label>
+        </fieldset>
+      </div>
+      <footer><span id="settings-msg"></span><button type="submit" class="send">저장</button></footer>
+    </form>
+  </div>
+
+  <script src="globe-data.js"></script>
+  <script src="hud-fx.js"></script>
+  <script src="util.js"></script>
+  <script src="widgets.js"></script>
+  <script src="chat.js"></script>
+  <script src="intro.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
