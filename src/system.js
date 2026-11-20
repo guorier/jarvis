@@ -6,8 +6,8 @@
 //  - safe()로 항목별 실패를 흡수해, 한 항목이 실패해도 나머지는 표시된다.
 //  - 느린 온도 조회를 getSlow로 옮겨 getFast가 막히지 않게 했다.
 // 개선 포인트
-//  - [리뷰] si.processes()는 Windows에서 무겁다(수백 ms). 메인 프로세스에서 10초마다 돌아 창이 잠깐 멈칫할 수 있다.
-//           → main.js [리뷰-M1]처럼 별도 프로세스로 옮기거나 주기를 늘리는 것을 권장.
+//  - [리뷰-M1 해결] 이 파일은 이제 별도 수집 프로세스(src/sys-worker.js) 안에서만 실행된다.
+//                  si.processes()처럼 무거운 조회가 돌아도 메인 프로세스와 창 그리기는 멈추지 않는다.
 //  - [리뷰] getSummary(AI의 get_system_status)는 fast+slow를 한 번에 다시 조회한다. 최근 값 캐시를 돌려주면 더 빠르다.
 //  - [리뷰] getSlow의 gpu.util/temp는 이제 화면에서 쓰지 않는다(사용률은 accel.js). 모델 이름만 쓰인다.
 // ============================================================================
@@ -50,7 +50,7 @@ async function getFast() {
     ramTotalGB: mem ? +(mem.total / 1024 ** 3).toFixed(1) : null,
     ramAvailGB: mem ? +(mem.available / 1024 ** 3).toFixed(1) : null,
     swapPct: mem && mem.swaptotal ? Math.round((mem.swapused / mem.swaptotal) * 100) : null,
-    accel: accel.get(), // { gpu, npu } — Windows 성능 카운터 (없으면 null)
+    accel: accel.get(), // 수집 프로세스 안에선 항상 null — 메인 프로세스(main.js sysFast)가 실제 값으로 채운다
     netDown: totalRx, // bytes/sec
     netUp: totalTx,
     tempC: temp && temp.main ? Math.round(temp.main) : null

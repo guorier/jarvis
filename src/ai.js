@@ -10,12 +10,11 @@
 // 개선 포인트
 //  - [리뷰-A1] Claude 대화 기록(messages)도 /초기화 전까지 계속 늘어난다(gemini.js [리뷰-G1]과 같은 문제).
 //  - [리뷰-A2] findByName의 부분 일치가 양방향이라, 이름이 비슷한 다른 항목이 실행될 수 있다.
-//  - [리뷰-A3] add_event의 time 형식을 확인하지 않는다. 화면(widgets.js renderEvents)은 time을 이스케이프 없이 넣는다.
+//  - [리뷰-A3 해결] add_event의 time을 HH:MM 형식으로 확인한다(화면 쪽도 이스케이프 — widgets.js [리뷰-W1 해결]).
 //  - [리뷰] control_device 뒤의 onDataChanged("devices")는 스마트홈 패널을 없앤 뒤 받는 곳이 없다(해는 없음).
 // ============================================================================
 const Anthropic = require("@anthropic-ai/sdk");
 const { newId } = require("./store");
-const system = require("./system");
 const feeds = require("./feeds");
 const control = require("./control");
 const { GeminiProvider } = require("./gemini");
@@ -152,8 +151,10 @@ const findByName = (list, name) => {
 };
 
 class Assistant {
-  constructor({ store, onDataChanged, onLog }) {
+  // systemSummary: PC 상태를 돌려주는 함수 (main.js가 별도 수집 프로세스를 거치는 함수를 넘긴다 — [리뷰-M1 해결])
+  constructor({ store, systemSummary, onDataChanged, onLog }) {
     this.store = store;
+    this.systemSummary = systemSummary;
     this.onDataChanged = onDataChanged;
     this.onLog = onLog;
     this.messages = [];
@@ -190,7 +191,7 @@ class Assistant {
     const store = this.store;
     switch (name) {
       case "get_system_status":
-        return await system.getSummary();
+        return await this.systemSummary();
       case "list_launchers_and_routines":
         return {
           launchers: store.get("launchers").map(({ id, name, target }) => ({ id, name, target })),
@@ -226,8 +227,8 @@ class Assistant {
       }
       case "add_event": {
         if (!/^\d{4}-\d{2}-\d{2}$/.test(input.date)) throw new Error("date는 YYYY-MM-DD 형식이어야 합니다.");
-        // [리뷰-A3] time도 같은 방식으로 확인할 것: if (input.time && !/^\d{2}:\d{2}$/.test(input.time)) throw ...
-        //           (웹 검색 결과에 섞인 문장이 AI를 거쳐 time에 들어오면 화면에 HTML로 끼어들 수 있다)
+        // [리뷰-A3 해결] time도 형식을 확인한다 (웹 검색 결과에 섞인 문장이 AI를 거쳐 들어오는 것을 막음)
+        if (input.time && !/^([01]\d|2[0-3]):[0-5]\d$/.test(input.time)) throw new Error("time은 HH:MM(24시간) 형식이어야 합니다.");
         const ev = { id: newId(), title: input.title, date: input.date, time: input.time || "" };
         store.set("events", [...store.get("events"), ev]);
         this.onDataChanged("events");

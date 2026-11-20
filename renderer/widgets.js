@@ -6,8 +6,7 @@
 //  - 사용자·외부 데이터(할 일, 메모, 뉴스 제목, 프로세스 이름 등)는 대부분 esc()로 이스케이프한다.
 //  - updateFast/updateSlow는 이전 조회가 끝나기 전엔 겹쳐 부르지 않는다(fastBusy/slowBusy).
 // 개선 포인트
-//  - [리뷰-W1] (중요) renderEvents에서 일정의 time과 날짜 표시를 이스케이프 없이 넣는다. AI가 add_event로
-//              넣은 time 문자열이 그대로 HTML로 해석될 수 있다(ai.js [리뷰-A3]와 함께 고칠 것).
+//  - [리뷰-W1 해결] renderEvents에서 일정의 날짜·시각·id도 이스케이프한다(ai.js [리뷰-A3 해결]과 짝).
 //  - [리뷰] saveKey는 저장 성공 뒤에야 State를 바꾼다(좋음). 다만 실패 시 화면에 알리지 않고 예외만 올라간다.
 //  - [리뷰] lastGpu는 값을 저장만 하고 쓰는 곳이 없다(예전 흔적).
 // ============================================================================
@@ -226,9 +225,8 @@ function renderEvents() {
     ? list
         .map((e) => {
           const label = e.date === today ? "오늘" : e.date.slice(5).replace("-", "/");
-          // [리뷰-W1] label과 e.time이 esc() 없이 들어간다 → `${esc(label)} ${esc(e.time || "")}`로 바꿀 것.
-          //           (제목 e.title은 이미 esc() 처리돼 있다)
-          return `<li data-id="${e.id}" class="${e.date === cal.selected ? "sel" : ""}"><span class="date-tag">${label} ${e.time || ""}</span><span class="grow">${esc(e.title)}</span><button class="x" title="삭제">✕</button></li>`;
+          // [리뷰-W1 해결] 날짜·시각·id도 esc()로 이스케이프한다 (제목과 같은 처리)
+          return `<li data-id="${esc(e.id)}" class="${e.date === cal.selected ? "sel" : ""}"><span class="date-tag">${esc(label)} ${esc(e.time || "")}</span><span class="grow">${esc(e.title)}</span><button class="x" title="삭제">✕</button></li>`;
         })
         .join("")
     : `<li><span class="grow" style="color:var(--dim)">예정된 일정이 없습니다.</span></li>`;

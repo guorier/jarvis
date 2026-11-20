@@ -305,8 +305,9 @@ jarvis.onDataChanged(async (key) => {
   renderAll();
   Globe.init($("#globe"));
   initMonitors();
-  // 시스템 정보 수집(CPU·프로세스 등)은 메인 프로세스를 잠깐 바쁘게 해 화면이 멈칫한다.
-  // 그래서 로딩 장면 사이 검은 화면일 때 처음 불러온다 (로딩을 건너뛰면 바로).
+  // 첫 데이터 조회(시스템·날씨·뉴스·환율)는 로딩 장면 사이 검은 화면일 때 한다 (로딩을 건너뛰면 바로).
+  // 시스템 조회는 이제 별도 프로세스에서 돌아 화면을 멈추지 않지만([리뷰-M1 해결]), 네트워크 요청이 몰리는 순간을
+  // 연출이 한창일 때 피하려고 그대로 둔다.
   Intro.onBlack = () => {
     updateFast();
     updateSlow();
@@ -321,7 +322,7 @@ jarvis.onDataChanged(async (key) => {
   pushNotice("시스템이 온라인 상태입니다.", "info");
   $("#chat-input").focus();
 
-  // [리뷰] 창이 최소화돼도 아래 주기 조회는 계속된다(특히 2초마다 시스템 조회 → 메인 프로세스 부담).
+  // [리뷰] 창이 최소화돼도 아래 주기 조회는 계속된다(2초마다 시스템 조회 → 수집 프로세스 CPU 사용).
   //        각 함수 앞에서 if (document.hidden) return; 하면 숨겨진 동안 쉬게 할 수 있다.
   setInterval(tickClock, 1000);
   setInterval(updateFast, 2000);

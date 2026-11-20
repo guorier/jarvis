@@ -6,7 +6,8 @@
 //  - 새 설정 항목이 생겨도 DEFAULTS.settings와 합쳐 읽어서 예전 파일과 호환된다.
 //  - 모르는 키는 저장을 거부한다.
 // 개선 포인트
-//  - [리뷰-S1] (중요) 파일이 깨져 JSON 읽기에 실패하면 기본값으로 바로 덮어써 기존 할 일·일정이 사라진다.
+//  - [리뷰-S1 해결] 파일이 깨져 읽기에 실패하면 jarvis-data.broken-<시각>.json으로 복사해 둔 뒤 초기화한다.
+//                  (main.js가 시작할 때 이 사실을 시스템 로그에 알린다)
 //  - [리뷰-S2] API 키·토큰이 평문으로 저장된다 → Electron safeStorage(Windows DPAPI)로 암호화 권장.
 //  - [리뷰-S3] set()마다 파일 전체를 동기로 다시 쓴다. 지금 데이터 크기에선 문제없지만 커지면 묶어서 쓰기(debounce).
 // ============================================================================
@@ -61,10 +62,19 @@ class Store {
     try {
       const raw = JSON.parse(fs.readFileSync(this.file, "utf8"));
       this.data = { ...this.data, ...raw, settings: { ...DEFAULTS.settings, ...(raw.settings || {}) } };
-    } catch {
-      // [리뷰-S1] 파일이 "없어서" 실패한 경우와 "깨져서" 실패한 경우를 구분하지 않는다.
-      //           깨진 경우에도 아래 save()가 기본값으로 덮어써 데이터가 사라진다.
-      //           → fs.existsSync(this.file)이면 jarvis-data.broken-<시각>.json으로 복사해 둔 뒤 초기화할 것.
+    } catch (err) {
+      // [리뷰-S1 해결] 파일이 "없어서" 실패했는지 "깨져서" 실패했는지 구분한다.
+      // 깨진 파일은 기본값으로 덮어쓰기 전에 jarvis-data.broken-<시각>.json으로 옮겨 두어, 손으로 되살릴 수 있게 한다.
+      if (fs.existsSync(this.file)) {
+        const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+        this.brokenFile = path.join(dir, `jarvis-data.broken-${stamp}.json`);
+        try {
+          fs.copyFileSync(this.file, this.brokenFile);
+        } catch {
+          this.brokenFile = null;
+        }
+        this.loadError = err.message;
+      }
       this.save();
     }
   }

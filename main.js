@@ -10,14 +10,14 @@
 //  - 외부 링크는 창 안에서 열지 않고 http/https만 기본 브라우저로 넘긴다.
 //
 // 개선 포인트 (아래 [리뷰-M*] 주석 참고)
-//  - [리뷰-M1] 시스템 정보 수집(systeminformation)이 메인 프로세스에서 돌아, 그동안 창 그리기가 잠깐 멈춘다.
+//  - [리뷰-M1 해결] 시스템 정보 수집을 별도 프로세스(src/sys-worker.js)로 옮겨 창 그리기가 멈추지 않는다.
 //  - [리뷰-M2] store:set은 키 이름만 확인하고 값의 모양은 검사하지 않는다.
 //  - [리뷰-M3] 개발용 환경변수(JARVIS_*) 분기가 설치본에도 그대로 들어 있다.
 // ============================================================================
-const { app, BrowserWindow, ipcMain, shell, Notification } = require("electron");
+const { app, BrowserWindow, ipcMain, shell, Notification, utilityProcess } = require("electron");
 const path = require("path");
 const { Store, newId } = require("./src/store");
-const system = require("./src/system");
+const accel = require("./src/accel");
 const feeds = require("./src/feeds");
 const control = require("./src/control");
 const { Assistant } = require("./src/ai");
@@ -33,6 +33,59 @@ const send = (channel, payload) => {
   if (win && !win.isDestroyed()) win.webContents.send(channel, payload);
 };
 const log = (text, level = "info") => send("log", { text, level, at: Date.now() });
+
+// ---------- 시스템 정보 수집 프로세스 ----------
+// [리뷰-M1 해결] systeminformation 조회를 별도 프로세스(src/sys-worker.js)에서 돌린다.
+// 메인 프로세스는 요청을 보내고 결과를 기다리기만 해서, 조회하는 동안에도 창 그리기가 멈추지 않는다.
+let sysWorker = null;
+let sysSeq = 0;
+const sysPending = new Map(); // id → { resolve, reject, timer }
+
+function startSysWorker() {
+  sysWorker = utilityProcess.fork(path.join(__dirname, "src", "sys-worker.js"), [], { serviceName: "J.A.R.V.I.S. 시스템 정보" });
+  sysWorker.on("message", (m) => {
+    const p = sysPending.get(m && m.id);
+    if (!p) return;
+    sysPending.delete(m.id);
+    clearTimeout(p.timer);
+    m.ok ? p.resolve(m.data) : p.reject(new Error(m.error));
+  });
+  // 수집 프로세스가 죽으면 기다리던 요청을 모두 실패로 끝내고, 다음 요청 때 새로 띄운다.
+  sysWorker.on("exit", () => {
+    sysWorker = null;
+    for (const p of sysPending.values()) {
+      clearTimeout(p.timer);
+      p.reject(new Error("시스템 정보 수집 프로세스가 종료되었습니다."));
+    }
+    sysPending.clear();
+  });
+}
+
+function sysCall(fn) {
+  if (!sysWorker) startSysWorker();
+  return new Promise((resolve, reject) => {
+    const id = ++sysSeq;
+    const timer = setTimeout(() => {
+      if (sysPending.delete(id)) reject(new Error("시스템 정보 응답 시간이 초과되었습니다."));
+    }, 20000);
+    sysPending.set(id, { resolve, reject, timer });
+    sysWorker.postMessage({ id, fn });
+  });
+}
+
+// GPU·NPU 사용률은 메인의 수집기(accel)가 갖고 있어 여기서 합친다.
+async function sysFast() {
+  const data = await sysCall("getFast");
+  return { ...data, accel: accel.get() };
+}
+async function sysSlow() {
+  return sysCall("getSlow");
+}
+// AI 도구(get_system_status)용 요약
+async function sysSummary() {
+  const [fast, slow] = await Promise.all([sysFast(), sysSlow()]);
+  return { ...fast, ...slow };
+}
 
 function createWindow() {
   // [리뷰-M3] 아래 JARVIS_* 개발용 분기는 설치본에서도 환경변수만 있으면 동작한다.
@@ -163,12 +216,9 @@ function registerIpc() {
   });
   handle("id:new", () => newId());
 
-  // 시스템
-  // [리뷰-M1] systeminformation 조회는 메인 프로세스에서 돌아 그동안 창 그리기(합성)가 0.1~0.5초 멈춘다.
-  //           로딩 중에는 검은 화면 순간으로 첫 호출을 미뤄 숨겼지만(intro.js fireBlack), 2초·10초 주기 호출 때
-  //           짧은 끊김은 남아 있다 → Electron utilityProcess(별도 프로세스)로 옮기는 것을 권장.
-  handle("sys:fast", () => system.getFast());
-  handle("sys:slow", () => system.getSlow());
+  // 시스템 — 별도 수집 프로세스에 맡긴다 ([리뷰-M1 해결], 위 sysCall 참고)
+  handle("sys:fast", () => sysFast());
+  handle("sys:slow", () => sysSlow());
 
   // 피드
   handle("feed:weather", () => feeds.getWeather(store.get("settings").city));
@@ -217,12 +267,23 @@ app.whenReady().then(() => {
   store = new Store(app.getPath("userData"));
   assistant = new Assistant({
     store,
+    systemSummary: sysSummary,
     onDataChanged: (key) => send("data:changed", key),
     onLog: (t) => log(`  ${t}`)
   });
   registerIpc();
-  require("./src/accel").start(); // GPU·NPU 사용률 수집 시작
+  accel.start(); // GPU·NPU 사용률 수집 시작
+  startSysWorker(); // CPU·메모리·디스크 등 수집 프로세스 (첫 조회 때 이미 떠 있도록 미리 띄움)
   createWindow();
+  // [리뷰-S1 해결] 데이터 파일이 깨져 초기화했다면, 화면이 뜬 뒤 시스템 로그에 알린다
+  if (store.loadError) {
+    win.webContents.once("did-finish-load", () =>
+      setTimeout(() => {
+        log(`데이터 파일이 손상되어 새로 만들었습니다 (${store.loadError}).`, "error");
+        if (store.brokenFile) log(`이전 파일은 ${store.brokenFile} 에 보관했습니다.`, "error");
+      }, 1500)
+    );
+  }
   setInterval(checkReminders, 30 * 1000);
   setTimeout(checkReminders, 5000);
 
@@ -231,7 +292,10 @@ app.whenReady().then(() => {
   });
 });
 
-app.on("before-quit", () => require("./src/accel").stop());
+app.on("before-quit", () => {
+  accel.stop();
+  if (sysWorker) sysWorker.kill();
+});
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
