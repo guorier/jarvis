@@ -30,7 +30,7 @@ npm start
 
 ## 다른 PC에 설치하기
 
-1. `dist\JARVIS-Setup-0.1.0.exe` 파일을 USB나 클라우드로 다른 PC에 옮깁니다.
+1. `dist\JARVIS-Setup-<버전>.exe` 파일(예: `JARVIS-Setup-0.2.0.exe`)을 USB나 클라우드로 다른 PC에 옮깁니다.
 2. 더블클릭해서 설치합니다. Node.js 같은 다른 프로그램은 필요 없습니다.
 3. 서명되지 않은 개인용 프로그램이라 "Windows의 PC 보호" 창이 뜨면 **추가 정보 → 실행**을 누릅니다.
 4. 설치가 끝나면 바탕화면과 시작 메뉴의 **JARVIS** 아이콘으로 실행합니다.
