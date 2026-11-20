@@ -44,6 +44,8 @@ function createWindow() {
   if (process.env.JARVIS_INTRO_SLOW) query.slow = process.env.JARVIS_INTRO_SLOW;
   if (process.env.JARVIS_FPS) query.fps = "1";
   win.loadFile(path.join(__dirname, "renderer", "index.html"), Object.keys(query).length ? { query } : undefined);
+  // 개발용: JARVIS_ZOOM=0.55 처럼 화면을 축소해 넓은 모니터(예: 2560px 폭)를 흉내 낸다
+  if (process.env.JARVIS_ZOOM) win.webContents.on("did-finish-load", () => win.webContents.setZoomFactor(Number(process.env.JARVIS_ZOOM)));
 
   // 개발용: JARVIS_DEBUG=1이면 화면 콘솔을 터미널에 출력, JARVIS_SNAPSHOT=경로면 8초 뒤 화면을 캡처한다.
   if (process.env.JARVIS_DEBUG) {

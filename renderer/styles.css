@@ -206,24 +206,35 @@ input, textarea, select, button { font: inherit; color: inherit; }
 
 .empty { color: var(--dim); font-size: 12px; padding: 2px 0; grid-column: 1 / -1; line-height: 1.5; }
 
-/* ---------- 가운데: 상단 ---------- */
-.topbar { display: flex; align-items: baseline; justify-content: center; gap: 14px; padding-top: 2px; }
-#greeting { font-size: 15px; font-weight: 500; color: var(--white); letter-spacing: 0.02em; }
-.status-line { font-family: var(--ui); color: var(--dim); font-size: 12px; }
-.dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--ok); margin-right: 6px; box-shadow: 0 0 6px var(--ok); }
+/* ---------- 엠블럼 안 글자: 인사 문구(가로줄 위) + 상태(가로줄 아래) ----------
+   엠블럼 크기에 맞춰 글자도 커지고 작아진다(cqw = 엠블럼 폭의 %). 가로줄은 엠블럼 높이 62.5% 지점 */
+.core-text { position: absolute; inset: 0; pointer-events: none; text-align: center; }
+/* 가로줄을 밑줄처럼: 글자 아랫면을 줄(62.5%)에서 엠블럼 폭의 0.9%만큼 띄워 올린다 */
+#greeting {
+  position: absolute; left: 0; right: 0; bottom: calc(37.5% + 0.9cqw); line-height: 1.1;
+  font-size: 2.75cqw; font-weight: 600; color: #e4f6ff; letter-spacing: 0.02em; white-space: nowrap;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.9), 0 0 0.5em rgba(86, 214, 238, 0.35);
+}
+.status-line {
+  position: absolute; left: 0; right: 0; top: 64.2%;
+  font-family: var(--ui); color: #6fa9c4; font-size: 2.2cqw; white-space: nowrap;
+  display: flex; align-items: center; justify-content: center;
+}
+.dot { display: inline-block; width: 0.6em; height: 0.6em; border-radius: 50%; background: var(--ok); margin-right: 0.45em; box-shadow: 0 0 6px var(--ok); }
 .busy .dot { background: var(--amber); box-shadow: 0 0 6px var(--amber); animation: blink 0.9s linear infinite; }
 
 /* ---------- 가운데: 원자로 스테이지 ---------- */
 .stage {
-  flex: 1.25 1 0;
-  min-height: 190px;
-  max-height: 600px;
+  flex: 1.9 1 0;
+  min-height: 220px;
+  max-height: 760px;
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: 6px;
 }
-.core { position: relative; height: 100%; aspect-ratio: 1; }
+/* 높이 92% — 스테이지 위아래에 여백을 남긴다 */
+.core { position: relative; height: 92%; aspect-ratio: 1; container-type: inline-size; }
 .core svg { width: 100%; height: 100%; overflow: visible; }
 
 /* 링 공통 — 사용자 스크린샷의 J.A.R.V.I.S. 엠블럼을 그대로 옮긴 것 */
@@ -321,7 +332,7 @@ input, textarea, select, button { font: inherit; color: inherit; }
 .orbit-list button:active { transform: scale(0.97); }
 
 /* ---------- 채팅 ---------- */
-.chat { flex: 1 1 0; min-height: 160px; }
+.chat { flex: 1 1 0; min-height: 130px; }
 #chat-log { flex: 1; overflow-y: auto; padding-right: 4px; display: flex; flex-direction: column; gap: 8px; user-select: text; }
 .msg { max-width: 86%; padding: 7px 11px; line-height: 1.55; font-size: 13.5px; word-break: break-word; }
 .msg.user { align-self: flex-end; background: rgba(31, 143, 255, 0.18); border: 1px solid rgba(73, 184, 255, 0.4); }
@@ -519,20 +530,22 @@ input, textarea, select, button { font: inherit; color: inherit; }
    닫힘: 다시 좁혀지면서 아래 선이 왼쪽 끝까지 내려가 진행 칸이 들어갈 홈이 된다 */
 /* 길이는 로딩 빠르기(--pace)에 맞춰 늘어난다 */
 .boot-frame path.top, .boot-frame path.bot { transition: d calc(460ms * var(--pace, 1)) var(--ease-in-out); }
-.boot-stage.open .boot-frame path.top { d: path("M -420 54 H 65 L 105 33 H 475 L 520 54 H 585 L 620 33 H 1060"); }
-.boot-stage.open .boot-frame path.bot { d: path("M -420 236 H 215 L 245 263 H 570 L 600 236 H 1060"); }
-.boot-stage.channel .boot-frame path.bot { d: path("M -420 165 H 215 L 245 165 H 475 L 515 138 H 1060"); }
+.boot-stage.open .boot-frame path.top { d: path("M -1000 54 H 65 L 105 33 H 475 L 520 54 H 585 L 620 33 H 1640"); }
+.boot-stage.open .boot-frame path.bot { d: path("M -1000 236 H 215 L 245 263 H 570 L 600 236 H 1640"); }
+.boot-stage.channel .boot-frame path.bot { d: path("M -1000 165 H 215 L 245 165 H 475 L 515 138 H 1640"); }
 
-/* 가운데 선 왼쪽 끝의 렌즈 빛 + 선을 따라 퍼지는 빛줄기 */
-.boot-flare { position: absolute; left: 0; right: 0; top: 48.2%; height: 0; pointer-events: none; }
+/* 가운데 선의 빛: 영상처럼 "화면" 왼쪽 끝에서 나온다.
+   모듈은 최대 1400px로 가운데에 놓이므로, 넓은 화면에서도 빛은 모듈이 아니라 화면 끝(50% - 50vw)에 붙인다.
+   렌즈 빛은 가운데 기준 둥근 그라데이션이라 어느 쪽에서도 네모나게 잘리지 않는다. */
+.boot-flare { position: absolute; left: calc(50% - 50vw); width: 100vw; top: 48.2%; height: 0; pointer-events: none; }
 .boot-flare::before {
-  content: ""; position: absolute; left: -2%; width: 70%; top: -1.5px; height: 3px;
+  content: ""; position: absolute; left: 0; width: min(62vw, 1400px); top: -1.5px; height: 3px;
   background: linear-gradient(90deg, #ffffff 0%, #bfeaff 6%, rgba(73, 184, 255, 0.6) 22%, rgba(31, 143, 255, 0.15) 55%, transparent 100%);
   filter: blur(0.5px);
 }
 .boot-flare::after {
-  content: ""; position: absolute; left: -9cqw; top: -4.2cqw; width: 30cqw; height: 8.4cqw;
-  background: radial-gradient(ellipse at 30% 50%, rgba(235, 248, 255, 0.95) 0%, rgba(90, 190, 255, 0.6) 14%, rgba(31, 143, 255, 0.16) 42%, transparent 70%);
+  content: ""; position: absolute; left: -15cqw; top: -4.2cqw; width: 30cqw; height: 8.4cqw;
+  background: radial-gradient(closest-side, rgba(235, 248, 255, 0.95) 0%, rgba(90, 190, 255, 0.6) 20%, rgba(31, 143, 255, 0.16) 60%, transparent 100%);
   animation: lens 2.2s ease-in-out infinite;
 }
 
@@ -653,7 +666,6 @@ input, textarea, select, button { font: inherit; color: inherit; }
 .panel.rv-in > * { animation: content-in 380ms var(--ease-out) 260ms backwards; }
 .daystrip.rv-in { animation: wipe 600ms var(--ease-out) backwards; }
 .daystrip.rv-in li { animation: content-in 260ms var(--ease-out) backwards; animation-delay: calc(var(--k, 0) * 14ms + 120ms); }
-.topbar.rv-in { animation: content-in 380ms var(--ease-out) backwards; }
 .stage.rv-in .orbit.left { animation: from-core-l 480ms var(--ease-out) 420ms backwards; }
 .stage.rv-in .orbit.right { animation: from-core-r 480ms var(--ease-out) 420ms backwards; }
 .round-dock.rv-in .rbtn { animation: pop 320ms var(--ease-out) backwards; animation-delay: calc(var(--k, 0) * 45ms); }
@@ -664,7 +676,7 @@ input, textarea, select, button { font: inherit; color: inherit; }
 .asm { transform-origin: 200px 200px; }
 .core.drawing .em-draw { stroke-dasharray: 1 1; animation: draw 700ms var(--ease-out) backwards; }
 .core.drawing .asm { animation: asm-in 1150ms var(--ease-out) backwards; animation-delay: calc(var(--i, 0) * 110ms + 180ms); }
-.core.drawing .asm-late { animation: fade 520ms var(--ease-out) 900ms backwards; }
+.core.drawing .asm-late, .core.drawing .core-text { animation: fade 520ms var(--ease-out) 900ms backwards; }
 
 @keyframes lens { 50% { opacity: 0.7; transform: scaleX(0.88); } }
 @keyframes cursor { 50% { opacity: 0.15; } }
@@ -699,7 +711,7 @@ input, textarea, select, button { font: inherit; color: inherit; }
 
 @media (prefers-reduced-motion: reduce) {
   .ring, .spin, .rot-a, .rot-b, .rot-c, .rot-d, .rot-bracket, .rot-yellow, .rot-band, .rot-dots, .em-inner { animation: none !important; }
-  .panel.rv-in, .daystrip.rv-in, .topbar.rv-in, .stage.rv-in .orbit, .round-dock.rv-in .rbtn,
+  .panel.rv-in, .daystrip.rv-in, .stage.rv-in .orbit, .round-dock.rv-in .rbtn,
   .panel.rv-in > *, .daystrip.rv-in li, .core.drawing .em-draw, .core.drawing .asm, .core.drawing .asm-late { animation: fade 300ms ease backwards !important; }
 }
 

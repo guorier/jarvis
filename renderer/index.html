@@ -33,12 +33,12 @@
        2장면(5.15~7.95s): 검은 화면에 링이 조립 → 충격파 → J.A.R.V.I.S 글자가 확대되며 들어옴 → 링 회전 -->
   <div id="boot">
     <div class="boot-stage" id="boot-stage">
-      <!-- 좌표는 영상 프레임 640×224 기준. 양 끝 선은 화면 끝을 조금 넘는 -420~1060까지(overflow visible).
+      <!-- 좌표는 영상 프레임 640×224 기준. 양 끝 선은 4K 넓은 화면 끝까지 닿는 -1000~1640까지(overflow visible).
            더 길게 그리면 빛번짐 계산 영역이 커져 첫 화면이 느려지고 끊긴다 -->
       <svg class="boot-frame" viewBox="0 0 640 224" preserveAspectRatio="none" aria-hidden="true">
-        <path class="top" d="M -420 78 H 65 L 105 57 H 475 L 520 78 H 585 L 620 57 H 1060" />
-        <path class="mid" d="M -420 108 H 1060" />
-        <path class="bot" d="M -420 138 H 215 L 245 165 H 570 L 600 138 H 1060" />
+        <path class="top" d="M -1000 78 H 65 L 105 57 H 475 L 520 78 H 585 L 620 57 H 1640" />
+        <path class="mid" d="M -1000 108 H 1640" />
+        <path class="bot" d="M -1000 138 H 215 L 245 165 H 570 L 600 138 H 1640" />
       </svg>
       <div class="boot-flare" aria-hidden="true"></div>
       <div class="boot-head"><span id="boot-text"></span><span id="boot-dots"></span><i class="boot-cursor"></i></div>
@@ -132,10 +132,6 @@
 
     <!-- ===== 가운데 ===== -->
     <main class="col col-center">
-      <div class="topbar" style="--i:1">
-        <div id="greeting">시스템 온라인</div>
-        <div class="status-line"><i class="dot"></i><span id="ai-status">대기 중</span></div>
-      </div>
 
       <div class="stage" style="--i:2">
         <div class="orbit left">
@@ -233,6 +229,11 @@
               <path d="M 146 250 H 178 M 185 250 H 254" class="em-under" />
             </g>
           </svg>
+          <!-- 인사 문구는 J.A.R.V.I.S. 아래 가로줄 바로 위, 상태는 줄 바로 아래 -->
+          <div class="core-text">
+            <div id="greeting">시스템 온라인</div>
+            <div class="status-line"><i class="dot"></i><span id="ai-status">대기 중</span></div>
+          </div>
         </div>
 
         <div class="orbit right">

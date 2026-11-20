@@ -34,7 +34,7 @@ const Intro = {
   // 엠블럼이 먼저 조립되고, 가운데부터 좌우가 짝을 이뤄 바깥으로 퍼지는 순서
   groups: [
     [".stage"],
-    [".daystrip", ".topbar"],
+    [".daystrip"],
     [".chrono", "#p-weather"],
     ["#p-system", "#p-personal"],
     ["#p-net", ".chat", "#p-proc"],
