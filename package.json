@@ -1,6 +1,6 @@
 {
   "name": "jarvis-hud",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "음성인식 없는 데스크톱 자비스 HUD",
   "author": "JARVIS",
   "main": "main.js",
